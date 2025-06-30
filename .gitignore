@@ -1,0 +1,72 @@
+api_key.py
+visuals.ipynb
+__pycache__/
+results/*
+!results/.gitkeep
+ViewCrafter/output/*
+CUT3R/output/*
+*.ckpt
+*.mp4
+*.gif
+ViewCrafter/logs
+
+ViewCrafter/.DS_Store
+ViewCrafter/__pycache__
+
+# CUT3R ignores
+
+# Byte-compiled / optimized / DLL files
+CUT3R/__pycache__/
+CUT3R/*.py[cod]
+
+# C extensions
+CUT3R/*.so
+
+# Distribution / packaging
+CUT3R/bin/
+CUT3R/build/
+CUT3R/develop-eggs/
+CUT3R/dist/
+CUT3R/eggs/
+CUT3R/lib/
+CUT3R/lib64/
+CUT3R/parts/
+CUT3R/sdist/
+CUT3R/var/
+CUT3R/*.egg-info/
+CUT3R/.installed.cfg
+CUT3R/*.egg
+
+# Installer logs
+CUT3R/pip-log.txt
+CUT3R/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+CUT3R/.tox/
+CUT3R/.coverage
+CUT3R/.cache
+CUT3R/nosetests.xml
+CUT3R/coverage.xml
+
+# Translations
+CUT3R/*.mo
+
+# Mr Developer
+CUT3R/.mr.developer.cfg
+CUT3R/.project
+CUT3R/.pydevproject
+
+# Rope
+CUT3R/.ropeproject
+
+# Django stuff:
+CUT3R/*.log
+CUT3R/*.pot
+
+# Sphinx documentation
+CUT3R/docs/_build/
+
+# Ignore data and ckpts
+*.pth
+CUT3R/data
+CUT3R/src/checkpoints
