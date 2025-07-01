@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='testG'
+EXP_NAME='testH'
 IMAGE_NAME='DSC00580'
 IMAGE_EXT='jpg'
-TRAJ='chair_aboveG'
+TRAJ='chair_aboveH'
 TRAJ_DESCRIPTION="Reach the chair in the corner of the room by flying over the table making sure not to collide with the table or the chairs in the middle of the scene. You should keep the target chair always in frame and stop when the target chair is the center of the view."
 
 echo "EXP_NAME: ${EXP_NAME}"
