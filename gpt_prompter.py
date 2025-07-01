@@ -86,7 +86,7 @@ Follow camera-centric conventions exactly. No extra text.
 
     text = response.choices[0].message.content
     match = re.search(r"```(?:[^\n]*)\n(.*?)\n```", text, re.DOTALL)
-    print(f"{match = }")
+    # print(f"{match = }")
     if match:
         with open(args.traj_file, "a") as f:
             f.write(match.group(1).strip() + "\n")
