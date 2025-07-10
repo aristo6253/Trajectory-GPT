@@ -188,17 +188,9 @@ class ViewCrafter:
             imgs = to_numpy(imgs)
             pts3d = to_numpy(pts3d)
             # Flatten all points and colors across views
-            pts = torch.from_numpy(np.concatenate(pts3d)).view(-1, 3).to(device)
-            print(f"Render pcd ({type(pts) = })")
-            print(f"Render pcd ({pts.shape = })")
-            print(f"Render pcd ({type(pts3d) = })")
-            print(f"Render pcd ({pts3d[0].shape = })")
-            
+            pts = torch.from_numpy(np.concatenate(pts3d)).view(-1, 3).to(device)   
             col = torch.from_numpy(np.concatenate(imgs)).view(-1, 3).to(device)
-            print(f"Render pcd ({type(col) = })")
-            print(f"Render pcd ({col.shape = })")
         else:
-            print("Yeeeeeeeeeeeeeeehah")
             pts = torch.from_numpy(pts3d).to(device)
             col = torch.from_numpy(colors).to(device)
 
@@ -338,21 +330,7 @@ class ViewCrafter:
             depth_avg = depth[-1][H//2,W//2]  # Z-depth at image center
             radius = depth_avg * self.opts.center_scale  # Scaled orbit radius for camera path
 
-            # print(f"{type(pcd) = }")
-            # print(f"{pcd[0].shape = }")
-
-            all_points = torch.cat([pts.view(-1, 3) for pts in self.pcd], dim=0)  # shape [N, 3]
-
-            min_vals = all_points.min(dim=0).values
-            max_vals = all_points.max(dim=0).values
-
-            depth_save(depth, os.path.join(self.opts.save_dir, f"depth.png"))
-
-            with open(os.path.join(self.opts.save_dir, "image_details.txt"), "w") as f:
-                f.write(f"Center depth: {depth_avg}\n")
-                f.write(f"Min values (x, y, z): {min_vals.tolist()}\n")
-                f.write(f"Max values (x, y, z): {max_vals.tolist()}\n")
-
+            imgs = np.array(self.scene.imgs)
 
             # Convert world coordinates to object-centric frame (used for orbit-style camera movement)
             # c2ws, pcd = world_point_to_obj(
@@ -367,7 +345,6 @@ class ViewCrafter:
         
 
             # Prepare image data and (optional) masks
-            imgs = np.array(self.scene.imgs)
         masks = None
 
         if self.opts.mode == 'single_view_target':
@@ -402,27 +379,24 @@ class ViewCrafter:
                 self.device, viz_traj=True, save_dir=os.path.join(self.opts.save_dir, os.path.splitext(os.path.basename(self.opts.traj_txt))[0])
             )
 
-            shutil.copy(self.opts.traj_txt, os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}.txt"))
+            # shutil.copy(self.opts.traj_txt, os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}.txt"))
         elif self.opts.mode == "single_view_txt_free":
             x = [0.0];  y = [0.0];  z = [0.0]
             yaw = [0.0]; pitch = [0.0]; roll = [0.0]
             with open(self.opts.traj_txt, 'r') as file:
                 for dx, dy, dz, dyaw, dpitch, droll in map(lambda l: map(float, l.split()), file):
                     x.append(x[-1] +  dx * self.opts.traj_scale)      # +x
-                    y.append(y[-1] +  dy * self.opts.traj_scale)      # −y  (image → world)
-                    z.append(z[-1] +  dz * self.opts.traj_scale)      # −z
+                    y.append(y[-1] -  dy * self.opts.traj_scale)      # −y  (image → world)
+                    z.append(z[-1] +  dz * self.opts.traj_scale)      # +z
                     yaw.append(yaw[-1] +  dyaw)         # −yaw
                     pitch.append(pitch[-1] + dpitch)    # +pitch
                     roll.append(roll[-1] +  droll)      # −roll
-                print(f"{x = }")
-                print(f"{y = }")
-                print(f"{z = }")
-                print(f"{yaw = }")
-                print(f"{pitch = }")
-                print(f"{roll = }")
-
-                video_length = 10 * (len(x) - 1)
-                print(f"{video_length = }")
+                # print(f"{x = }")
+                # print(f"{y = }")
+                # print(f"{z = }")
+                # print(f"{yaw = }")
+                # print(f"{pitch = }")
+                # print(f"{roll = }")
             
             camera_traj, num_views, frame_idx = generate_traj_txt_free(
                 c2ws, H, W, focals, principal_points,
@@ -430,7 +404,7 @@ class ViewCrafter:
                 self.device, viz_traj=False, save_dir=os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}")
             )
 
-            shutil.copyfile(self.opts.traj_txt, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'trajectory.txt'))
+            # shutil.copyfile(self.opts.traj_txt, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'trajectory.txt'))
         else:
             raise KeyError(f"Invalid Mode: {self.opts.mode}")
         
@@ -440,12 +414,10 @@ class ViewCrafter:
             render_results, viewmask = self.run_render(
                 [self.pcd[-1]], [imgs[-1]], masks, H, W, camera_traj, num_views
             )
-            # save_video(render_results, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'render1.mp4'))
         else:
             render_results, viewmask = self.run_render(
                 self.pcd, None, masks, 576, 1024, camera_traj, num_views, colors=self.colors
             )
-            # save_video(render_results, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'render2.mp4'))
 
 
         # Resize renderings to match expected diffusion model input (e.g., 576x1024)
@@ -457,24 +429,17 @@ class ViewCrafter:
         ).permute(0, 2, 3, 1)  # NCHW → NHWC
 
         # Set the first frame to be the original input image
-        for i in range(len(frame_idx) - 1): # Skip the last one (we haven't calculated it yet)
-            print(f"{frame_idx[i] = }")
+        for i in range(len(frame_idx) - 1): # Skip the last one (we haven't calculated it yet) 
+            # print(f"{frame_idx[i] = }")
             frame_dir = f'../results/{self.opts.exp_id}/step{str(i).zfill(2)}/rgb.png'
             render_results[frame_idx[i]] = torch.from_numpy(np.array(Image.open(frame_dir).convert("RGB").resize((1024, 576), Image.BILINEAR))).float() / 255.0
-            pass
-        render_results[0] = self.img_ori
-
-        # Handle edge case: if trajectory ends in (0,0,0), loop the video by copying the first frame to last
-        # if self.opts.mode == 'single_view_txt':
-        #     if phi[-1] == 0. and theta[-1] == 0. and r[-1] == 0.:
-        #         render_results[-1] = self.img_ori
-
-        # if self.opts.mode == 'single_view_txt_free':
-        #     if x[-1] == 0. and y[-1] == 0. and z[-1] == 0. and yaw[-1] == 0. and pitch[-1] == 0. and roll[-1] == 0.:
-        #         render_results[-1] = self.img_ori
+        
+        # render_results[0] = self.img_ori if self.opts.testing
 
         # Save rendered trajectory as video
-        save_video(render_results, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'render.mp4'))
+        if self.opts.testing:
+            save_video(render_results, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'render.mp4'))
+        # save_video(render_results, f'../results/{self.opts.exp_id}/step{str(i).zfill(2)}/render.mp4')
 
         # Optionally save point cloud with camera poses for visualization
         if self.opts.pcd_dir is None:
@@ -484,7 +449,10 @@ class ViewCrafter:
         diffusion_results = self.run_diffusion(render_results)
 
         # Save diffusion output as a video (normalized back to [0, 1])
-        save_video((diffusion_results + 1.0) / 2.0, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'diffusion.mp4'))
+        # save_video((diffusion_results + 1.0) / 2.0, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'diffusion.mp4'))
+        save_video((diffusion_results + 1.0) / 2.0, f'../results/{self.opts.exp_id}/step{str(i).zfill(2)}/diffusion.mp4')
+
+
 
         save_path  = os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'last_frame.jpg')
 
@@ -495,7 +463,7 @@ class ViewCrafter:
         img = (img * 255).to(torch.uint8).numpy()           # → uint8, [0,255]
 
         if not self.opts.testing:
-            Image.fromarray(img).save(save_path, quality=95)
+            # Image.fromarray(img).save(save_path, quality=95)
             Image.fromarray(img).save(f'../CUT3R/my_examples/{self.opts.exp_id}/frame_{str(self.step).zfill(3)}.jpg', quality=95)
             Image.fromarray(img).save(f'../results/{self.opts.exp_id}/step{str(self.step).zfill(2)}/rgb.png', quality=95)
 
@@ -528,10 +496,6 @@ class ViewCrafter:
     def setup_dust3r(self):
         self.dust3r = load_model(self.opts.model_path, self.device)
 
-    def setup_mast3r(self):
-        model_name = "naver/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric"
-        self.mast3r = AsymmetricMASt3R.from_pretrained(model_name).to(self.device)
-    
     def load_initial_images(self, image_dir):
         """
         Load and preprocess the initial image(s) for depth estimation and point cloud reconstruction.

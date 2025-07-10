@@ -107,11 +107,11 @@ def prepare_input(img_paths, img_mask, size, raymaps=None, raymap_mask=None, rev
     from src.dust3r.utils.image import load_images
 
     images = load_images(img_paths, size=size)
-    print(f"{img_paths = }")
+    # print(f"{img_paths = }")
     views = []
 
     if raymaps is None and raymap_mask is None:
-        print(f"{len(images) = }")
+        # print(f"{len(images) = }")
         # Only images are provided.
         for i in range(len(images)):
             view = {

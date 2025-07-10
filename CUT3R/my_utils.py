@@ -14,10 +14,10 @@ def npz_to_png_depth(path, savedir, save=True, exp_name=None):
 
     step = str(len(data_dir) - 1)
 
-    print(f"Creating: ../results/{exp_name}/step{step.zfill(2)}")
+    # print(f"Creating: ../results/{exp_name}/step{step.zfill(2)}")
     os.makedirs(f"../results/{exp_name}/step{step.zfill(2)}", exist_ok=True)
 
-    print(f"{os.path.join(os.path.join(path, 'depth'), data) = }")
+    # print(f"{os.path.join(os.path.join(path, 'depth'), data) = }")
     try:
         data = np.load(os.path.join(os.path.join(path, 'depth'), data), allow_pickle=True)
     except Exception as e:
@@ -37,15 +37,15 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
     
     data_dir = sorted(os.listdir(os.path.join(path, visualizing)))
     data = data_dir[-1]
-    print(f"{data_dir = }")
-    print(f"{data = }")
+    # print(f"{data_dir = }")
+    # print(f"{data = }")
 
     step = str(len(data_dir) - 1)
 
-    print(f"Creating: ../results/{exp_name}/step{step.zfill(2)}")
+    # print(f"Creating: ../results/{exp_name}/step{step.zfill(2)}")
     os.makedirs(f"../results/{exp_name}/step{step.zfill(2)}", exist_ok=True)
 
-    print(f"{os.path.join(os.path.join(path, visualizing), data) = }")
+    # print(f"{os.path.join(os.path.join(path, visualizing), data) = }")
     try:
         data = np.load(os.path.join(os.path.join(path, visualizing), data), allow_pickle=True)
     except Exception as e:
@@ -55,7 +55,6 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
     if isinstance(data, np.ndarray): 
 
         if data.ndim == 1:
-            print('A')
             plt.plot(data)
             plt.title("1D Array")
             plt.show()
@@ -64,7 +63,6 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
                 plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/depth.png")
 
         elif data.ndim == 2:
-            print('B')
             plt.imshow(data, cmap='viridis_r')
             plt.title("2D Array")
             plt.colorbar()
@@ -74,7 +72,6 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
                 plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/depth.png")
 
         elif data.ndim == 3:
-            print('C')
             plt.imshow(data[0], cmap='viridis_r')
             plt.title("First Slice of 3D Array")
             plt.colorbar()
@@ -129,31 +126,41 @@ def render_bev(Pw, E, r, cell=0.05, arrow_len_px=15, out_dir=None, step=None, ex
     Pslice = Pc[np.abs(Pc[:,1]) <= r]                  # keep |y_c| ≤ r
     xz_px  = np.floor(Pslice[:,[0,2]] / cell).astype(int)
 
-    # -------- shift so camera sits at centre pixel ---------------------------------
-    x_min, z_min = xz_px.min(0)
-    xz_px -= [x_min, z_min]
-    W, H  = xz_px.max(0) + 1
+    # -------- include camera in bounds ---------------------------------------------
+    cam_px_grid = np.array([0, 0])                     # camera at world origin
+    cam_px_raw  = np.floor(cam_px_grid / cell).astype(int)
 
-    # -------- RGB canvas: white = free space ---------------------------------------
+    x_min = min(xz_px[:, 0].min(), cam_px_raw[0])
+    z_min = min(xz_px[:, 1].min(), cam_px_raw[1])
+
+    xz_px -= [x_min, z_min]
+    cam_px = cam_px_raw - [x_min, z_min]
+
+    # -------- image shape ----------------------------------------------------------
+    W, H = xz_px.max(0) + 1
     bev = np.full((H, W, 3), 255, np.uint8)            # white background
     bev[xz_px[:,1], xz_px[:,0]] = [0, 0, 255]          # blue obstacles
 
     # -------- mark agent (camera) position -----------------------------------------
-    cam_px = (-x_min, -z_min)                          # (col,row) of camera
-    bev[cam_px[1], cam_px[0]] = [255, 0, 0]            # red dot
+    if 0 <= cam_px[1] < H and 0 <= cam_px[0] < W:
+        bev[cam_px[1], cam_px[0]] = [255, 0, 0]        # red dot
+    else:
+        print(f"[WARNING] Camera position {cam_px} out of bounds {bev.shape[:2]}")
 
     # -------- draw forward-facing arrow --------------------------------------------
     plt.figure(figsize=(8,8))
     plt.imshow(bev, origin='lower')
-    plt.scatter(cam_px[0], cam_px[1], color='red', s=40)
-    plt.arrow(cam_px[0], cam_px[1], 0, arrow_len_px,   # +z is “up” in image
-              width=1.2, head_width=4, head_length=6, color='red', length_includes_head=True)
+    if 0 <= cam_px[1] < H and 0 <= cam_px[0] < W:
+        plt.scatter(cam_px[0], cam_px[1], color='red', s=40)
+        plt.arrow(cam_px[0], cam_px[1], 0, arrow_len_px,   # +z is “up” in image
+                  width=1.2, head_width=4, head_length=6, color='red', length_includes_head=True)
     plt.title("BEV: red = agent, blue = obstacles")
-    plt.xlabel("x (right)  [{} m/px]".format(cell))
+    plt.xlabel(f"x (right)  [{cell} m/px]")
     plt.ylabel("z (forward)")
     plt.grid(False)
     plt.savefig(f"{out_dir}/obstacles_{str(step).zfill(3)}.png")
     plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/bev.png")
+
 
 def load_intrinsics_and_pose(camera_file):
     data = np.load(camera_file)
@@ -205,7 +212,7 @@ def visualize_pointcloud(depth_dir, color_dir, camera_dir, axis_size=0.1, dbscan
 
     files = sorted(os.listdir(depth_dir))
     n_images = len(files)
-    print(f"{n_images = }")
+    # print(f"{n_images = }")
 
     poses = []
 
@@ -236,9 +243,11 @@ def visualize_pointcloud(depth_dir, color_dir, camera_dir, axis_size=0.1, dbscan
     # scannetpp_processing(pcd_combined, poses, target=None, only_bev=False, gif=False)
     for i in range(len(poses)):
         if i == len(poses) - 1:
+            print(f"{len(np.asarray(pcd_combined.points))}")
             render_bev(np.asarray(pcd_combined.points), poses[i], r=0.25, cell=0.04, out_dir=scene, step=str(i), exp_name=exp_name)
     # vis_geometries.insert(0, pcd_combined)
     # o3d.visualization.draw_geometries(vis_geometries, width=1280, height=720)
     
 def obstacle_map(scene, dbscan, exp_name):
+    
     visualize_pointcloud(f"{scene}/depth", f"{scene}/color", f"{scene}/camera", dbscan=dbscan, scene=scene, exp_name=exp_name)

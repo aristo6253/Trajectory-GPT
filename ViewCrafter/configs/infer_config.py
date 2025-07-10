@@ -30,6 +30,7 @@ def get_parser():
     parser.add_argument('--pcd_dir', type=str, default=None, help='Directory for the pointcloud of the scene (json format)')
     parser.add_argument('--traj_scale', type=float, default=1, help='Scaling factor for the trajectory to match the pcd reconstruction')
     parser.add_argument('--cam_info_dir', type=str, default=None, help='Directory for camera intrisics and extrinsics (npz format)')
+    parser.add_argument('--trajgpt', type=bool, default=True)
 
     ## diffusion
     parser.add_argument("--ckpt_path", type=str, default='./checkpoints/model.ckpt', help="checkpoint path")

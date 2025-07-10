@@ -1,17 +1,20 @@
 #!/bin/bash
+#SBATCH --job-name=viewcrafter_gpu
+#SBATCH --output=logs/trajgpt.out
+#SBATCH --error=logs/trajgpt.err
+#SBATCH --partition=gpu         # or gpu_test if testing
+#SBATCH --gres=gpu:1            # request 1 GPU
+#SBATCH --cpus-per-task=4       # CPU cores
+#SBATCH --mem=32G               # RAM
+#SBATCH --time=02:00:00         # Max runtime (HH:MM:SS)
 set -e  # exit on any error
 
-EXP_NAME='testT'
-IMAGE_NAME='outdoors2'
+EXP_NAME='testK'
+IMAGE_NAME='room2412'
 IMAGE_EXT='jpg'
-TRAJ='black_carT'
-TRAJ_DESCRIPTION="Go to the black car visible on this scene, by first yawing right until aligned and then moving forward until you reach the car."
+TRAJ='blue_binK'
 # TRAJ_DESCRIPTION="Reach the chair in the corner of the room by flying over the table making sure not to collide with the table or the chairs in the middle of the scene. You should keep the target chair always in frame and stop when the target chair is the center of the view."
-# TRAJ_DESCRIPTION="Reach the blue trash bin in the end of the room by adjusting the yaw and pitch to have the target centered and after the centering is done advance towards the objective until you are in front of it."
-
-# --prompt "${TRAJ_DESCRIPTION}" \
-# --prompt "Navigation through an indoor scene" \
-
+TRAJ_DESCRIPTION="Reach the blue trash bin in the end of the room by adjusting the yaw and pitch to have the target centered and after the centering is done advance towards the objective until you are in front of it."
 
 echo "EXP_NAME: ${EXP_NAME}"
 echo "IMAGE_NAME: ${IMAGE_NAME}"
@@ -54,8 +57,7 @@ for i in $(seq 1 10); do
     python gpt_prompter.py \
         --traj_desc "${TRAJ_DESCRIPTION}" \
         --exp_name ${EXP_NAME} \
-        --traj_file results/${EXP_NAME}/${TRAJ}.txt \
-        --overlay_cross
+        --traj_file results/${EXP_NAME}/${TRAJ}.txt
 
     conda deactivate
 
@@ -67,7 +69,7 @@ for i in $(seq 1 10); do
 
     echo "RUNNING VIEWCRAFTER"
     python inference.py \
-        --image_dir ../images/${IMAGE_NAME}.${IMAGE_EXT} \
+        --image_dir my_images/${IMAGE_NAME}.${IMAGE_EXT} \
         --out_dir ./output \
         --traj_txt ../results/${EXP_NAME}/${TRAJ}.txt \
         --mode single_view_txt_free \
@@ -76,14 +78,13 @@ for i in $(seq 1 10); do
         --ckpt_path ./checkpoints/model.ckpt \
         --config configs/inference_pvd_1024.yaml \
         --ddim_steps 50 \
-        --ddim_eta 0.5 \
         --device cuda:0 \
         --height 576 \
         --width 1024 \
         --model_path ./checkpoints/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth \
-        --prompt "Smooth navigation through a scene" \
+        --prompt "Navigation through an indoor scene" \
         --pcd_dir ../results/${EXP_NAME}/step$(printf "%02d" $((i - 1)))/pcs_data.json \
-        --traj_scale 1 \
+        --traj_scale 0.5 \
         --cam_info_dir ../results/${EXP_NAME}/camera.npz
 
     conda deactivate
@@ -93,3 +94,4 @@ for i in $(seq 1 10); do
 done
 
 echo "===== DONE WITH ALL ITERATIONS ====="
+

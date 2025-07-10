@@ -12,6 +12,8 @@ ViewCrafter/logs
 
 ViewCrafter/.DS_Store
 ViewCrafter/__pycache__
+logs/*
+CUT3R/my_examples
 
 # CUT3R ignores
 

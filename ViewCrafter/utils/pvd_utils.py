@@ -471,12 +471,12 @@ def generate_traj_txt_free(c2ws_anchor, H, W, fs, c, x, y, z, yaw, pitch, roll, 
     pitchs, idx_pitch = txt_interpolation(pitch, frame, mode='smooth' if len(pitch) > 3 else 'linear')
     rolls, idx_roll = txt_interpolation(roll, frame, mode='smooth' if len(roll) > 3 else 'linear')
 
-    print(f"{idx_x = }")
-    print(f"{idx_y = }")
-    print(f"{idx_z = }")
-    print(f"{idx_yaw = }")
-    print(f"{idx_pitch = }")
-    print(f"{idx_roll = }")
+    # print(f"{idx_x = }")
+    # print(f"{idx_y = }")
+    # print(f"{idx_z = }")
+    # print(f"{idx_yaw = }")
+    # print(f"{idx_pitch = }")
+    # print(f"{idx_roll = }")
 
     xs[0], xs[-1] = x[0], x[-1]
     ys[0], ys[-1] = y[0], y[-1]

@@ -3,6 +3,7 @@ import sys
 import os
 import re
 import argparse
+import cv2
 from openai import OpenAI
 import api_key
 import gpt_params
@@ -23,11 +24,28 @@ def get_latest_step_folder(base_dir):
     max_step = int(max_step_folder[-2:])  # from "stepXX"
     return max_step, os.path.join(base_dir, max_step_folder)
 
+def overlay_red_cross(image_path, output_path, thickness=2):
+    img = cv2.imread(image_path)
+    if img is None:
+        raise ValueError(f"Failed to load image at {image_path}")
+
+    h, w = img.shape[:2]
+    cx, cy = w // 2, h // 2
+
+    # Draw red lines
+    cv2.line(img, (cx, 0), (cx, h - 1), (0, 0, 255), thickness=thickness)
+    cv2.line(img, (0, cy), (w - 1, cy), (0, 0, 255), thickness=thickness)
+
+    # Overwrite original image
+    cv2.imwrite(output_path, img)
+
+
 def main():
     parser = argparse.ArgumentParser(description="6-DoF trajectory planning prompt")
     parser.add_argument("--traj_desc", type=str, help="Trajectory description")
     parser.add_argument("--exp_name", type=str, help="Experiment name under results/")
     parser.add_argument("--traj_file", type=str, help="File where the trajectory step will be saved")
+    parser.add_argument("--overlay_cross", action="store_true", help="Overlay red cross on rgb.png")
     args = parser.parse_args()
 
     traj_desc = args.traj_desc
@@ -42,8 +60,24 @@ def main():
     depth_path = os.path.join(step_path, "depth.png")
     bev_path = os.path.join(step_path, "bev.png")
 
+    if args.overlay_cross:
+        guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
+        overlay_red_cross(rgb_path, guided_rgb_path)
+
+
+    traj_hist = ""
+
+    if max_step > 0:
+        with open(args.traj_file, "r") as f:
+            lines = f.readlines()
+            traj_hist = "\n".join(
+                [f"Step{i+1}: {line.strip()}" for i, line in enumerate(lines)]
+            )
+    else:
+        traj_hist = "(No Steps yet)"
+
     # Encode images
-    rgb_b64 = encode_image(rgb_path)
+    rgb_b64 = encode_image(guided_rgb_path) if args.overlay_cross else encode_image(rgb_path)
     depth_b64 = encode_image(depth_path)
     bev_b64 = encode_image(bev_path)
 
@@ -52,6 +86,9 @@ def main():
 
 Goal:
 {traj_desc}
+
+Step History:
+{traj_hist}
 
 Reminder: Respond with:
 1. Step-by-step reasoning (max 4 lines)

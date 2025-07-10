@@ -17,13 +17,15 @@ if __name__ == "__main__":
 
     # Create directory to save outputs for this run
     opts.save_dir = os.path.join(opts.out_dir, opts.exp_name) if not opts.testing else 'test_output'
-    os.makedirs(opts.save_dir, exist_ok=True)
+    if opts.testing:
+        os.makedirs(opts.save_dir, exist_ok=True)
     with open(opts.traj_txt, 'r') as f:
         step = sum(1 for _ in f)
-    os.makedirs(os.path.join(opts.save_dir, f"{os.path.splitext(os.path.basename(opts.traj_txt))[0]}_{step}"), exist_ok=True)
+    if opts.testing:
+        os.makedirs(os.path.join(opts.save_dir, f"{os.path.splitext(os.path.basename(opts.traj_txt))[0]}_{step}"), exist_ok=True)
 
-    ext = os.path.splitext(opts.image_dir)[1]
-    shutil.copyfile(opts.image_dir, os.path.join(opts.save_dir, f"{os.path.splitext(os.path.basename(opts.image_dir))[0]}{ext}"))
+    # ext = os.path.splitext(opts.image_dir)[1]
+    # shutil.copyfile(opts.image_dir, os.path.join(opts.save_dir, f"{os.path.splitext(os.path.basename(opts.image_dir))[0]}{ext}"))
 
     # Instantiate the ViewCrafter pipeline with the user-defined options
     pvd = ViewCrafter(opts, step=step)
@@ -37,12 +39,5 @@ if __name__ == "__main__":
 
     elif opts.mode == 'single_view_txt_free':
         pvd.nvs_single_view()  # Run synthesis from .txt trajectory
-
-    elif opts.mode == 'single_view_eval':
-        pvd.nvs_single_view_eval()  # Presumably for benchmarking or metric evaluation
-
-    elif opts.mode == 'sparse_view_interp':
-        pvd.nvs_sparse_view_interp()  # Render interpolated views from sparse input
-
     else:
         raise KeyError(f"Invalid Mode: {opts.mode}")  # Catch misconfigured mode
