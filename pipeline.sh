@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='testT'
+EXP_NAME='testR'
 IMAGE_NAME='outdoors2'
 IMAGE_EXT='jpg'
-TRAJ='black_carT'
+TRAJ='black_carR'
 TRAJ_DESCRIPTION="Go to the black car visible on this scene, by first yawing right until aligned and then moving forward until you reach the car."
 # TRAJ_DESCRIPTION="Reach the chair in the corner of the room by flying over the table making sure not to collide with the table or the chairs in the middle of the scene. You should keep the target chair always in frame and stop when the target chair is the center of the view."
 # TRAJ_DESCRIPTION="Reach the blue trash bin in the end of the room by adjusting the yaw and pitch to have the target centered and after the centering is done advance towards the objective until you are in front of it."
@@ -76,7 +76,6 @@ for i in $(seq 1 10); do
         --ckpt_path ./checkpoints/model.ckpt \
         --config configs/inference_pvd_1024.yaml \
         --ddim_steps 50 \
-        --ddim_eta 0.5 \
         --device cuda:0 \
         --height 576 \
         --width 1024 \

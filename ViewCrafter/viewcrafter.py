@@ -296,22 +296,6 @@ class ViewCrafter:
             - Optionally interpolates renderings and applies diffusion model to synthesize high-fidelity novel views.
             - Saves outputs (rendered video and optionally candidate masks).
         """
-        data = np.load(self.opts.cam_info_dir)
-        K = data["intrinsics"]
-        pose = data["pose"]
-
-        w2c = np.linalg.inv(pose)
-        c2ws = torch.tensor(w2c[None, ...], dtype=torch.float32).to('cuda:0')
-
-        focal = K[0, 0]  # assuming fx = fy
-        focals = torch.tensor([[focal]], dtype=torch.float32, device='cuda:0')
-
-        cx, cy = K[0, 2], K[1, 2]
-        principal_points = torch.tensor([[cx, cy]], dtype=torch.float32, device='cuda:0')
-        
-
-        H, W = 288, 512
-
 
         if self.opts.pcd_dir is None:
 
@@ -341,10 +325,23 @@ class ViewCrafter:
             #     elevation=self.opts.elevation,
             #     device=self.device
             # )
-        
-        
+        else:
+            data = np.load(self.opts.cam_info_dir)
+            K = data["intrinsics"]
+            pose = data["pose"]
 
-            # Prepare image data and (optional) masks
+            w2c = np.linalg.inv(pose)
+            c2ws = torch.tensor(w2c[None, ...], dtype=torch.float32).to('cuda:0')
+
+            focal = K[0, 0]  # assuming fx = fy
+            focals = torch.tensor([[focal]], dtype=torch.float32, device='cuda:0')
+
+            cx, cy = K[0, 2], K[1, 2]
+            principal_points = torch.tensor([[cx, cy]], dtype=torch.float32, device='cuda:0')
+            
+
+            H, W = 288, 512
+
         masks = None
 
         if self.opts.mode == 'single_view_target':

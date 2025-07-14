@@ -59,6 +59,8 @@ def main():
     rgb_path = os.path.join(step_path, "rgb.png")
     depth_path = os.path.join(step_path, "depth.png")
     bev_path = os.path.join(step_path, "bev.png")
+    prompt_response_path = os.path.join(step_path, "prompt_and_response.txt")
+    response_hist_path = os.path.join(base_dir, "response_history.txt")
 
     if args.overlay_cross:
         guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
@@ -127,6 +129,16 @@ Follow camera-centric conventions exactly. No extra text.
     if match:
         with open(args.traj_file, "a") as f:
             f.write(match.group(1).strip() + "\n")
+
+    with open(prompt_response_path, "w") as f:
+        f.write("=== Prompt ===\n")
+        f.write(full_user_prompt.strip() + "\n\n")
+        f.write("=== Response ===\n")
+        f.write(response.choices[0].message.content.strip() + "\n")
+
+    with open(response_hist_path, "a") as f:
+        f.write(f"\n=== Response {max_step} ===\n")
+        f.write(text.strip() + "\n")
 
 if __name__ == "__main__":
     main()
