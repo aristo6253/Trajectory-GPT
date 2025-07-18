@@ -56,6 +56,7 @@ def main():
     base_dir = os.path.join("results", exp_name)
     max_step, step_path = get_latest_step_folder(base_dir)
 
+    rgb0_path = os.path.join(base_dir, 'step00', "rgb.png")
     rgb_path = os.path.join(step_path, "rgb.png")
     depth_path = os.path.join(step_path, "depth.png")
     bev_path = os.path.join(step_path, "bev.png")
@@ -79,6 +80,7 @@ def main():
         traj_hist = "(No Steps yet)"
 
     # Encode images
+    rgb0_b64 = encode_image(rgb0_path)
     rgb_b64 = encode_image(guided_rgb_path) if args.overlay_cross else encode_image(rgb_path)
     depth_b64 = encode_image(depth_path)
     bev_b64 = encode_image(bev_path)
@@ -101,11 +103,12 @@ Follow camera-centric conventions exactly. No extra text.
 
     # Create the prompt and image inputs
     messages = [
-        {"role": "system", "content": gpt_params.SYSTEM_PROMPT2.strip()},
+        {"role": "system", "content": gpt_params.SYSTEM_PROMPT.strip()},
         {
             "role": "user",
             "content": [
                 {"type": "text", "text": full_user_prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb0_b64}"}},
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb_b64}"}},
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{depth_b64}"}},
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{bev_b64}"}},

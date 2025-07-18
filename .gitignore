@@ -72,3 +72,14 @@ CUT3R/docs/_build/
 *.pth
 CUT3R/data
 CUT3R/src/checkpoints
+
+*.pyc
+.vscode
+gaussian-splatting/output
+build
+diff_rasterization/diff_rast.egg-info
+diff_rasterization/dist
+tensorboard_3d
+screenshots
+gaussian-splatting/assets
+gaussian-splatting/data
