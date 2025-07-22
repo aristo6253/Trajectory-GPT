@@ -55,11 +55,6 @@ class Scene:
         else:
             assert False, "Could not recognize scene type!"
 
-        # print("Test 1")
-        # print(f"{scene_info.train_cameras = }")
-        # print(f"{scene_info.test_cameras = }")
-        # print(f"{scene_info.traj_cameras = }")
-
         if not self.loaded_iter:
             with open(scene_info.ply_path, 'rb') as src_file, open(os.path.join(self.model_path, "input.ply") , 'wb') as dest_file:
                 dest_file.write(src_file.read())
@@ -76,29 +71,19 @@ class Scene:
             with open(os.path.join(self.model_path, "cameras.json"), 'w') as file:
                 json.dump(json_cams, file)
 
-        # print("Test 2")
-        # print(f"{scene_info.train_cameras = }")
-        # print(f"{scene_info.test_cameras = }")
-        # print(f"{scene_info.traj_cameras = }")
-
         if shuffle:
             random.shuffle(scene_info.train_cameras)  # Multi-res consistent random shuffling
             random.shuffle(scene_info.test_cameras)  # Multi-res consistent random shuffling
 
         self.cameras_extent = scene_info.nerf_normalization["radius"]
 
-        # print("Test 3")
-        # print(f"{scene_info.train_cameras = }")
-        # print(f"{scene_info.test_cameras = }")
-        # print(f"{scene_info.traj_cameras = }")
-
         for resolution_scale in resolution_scales:
-            print(f"{resolution_scale = }")
+            # print(f"{resolution_scale = }")
             print("Loading Training Cameras")
             self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, False)
             print("Loading Test Cameras")
             self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, True)
-            print("Loading Traj Cameras")
+            print("Loading Trajectory Cameras")
             self.traj_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.traj_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, True)
             
 

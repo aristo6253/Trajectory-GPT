@@ -1,13 +1,14 @@
 #!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='testR'
-IMAGE_NAME='outdoors2'
+EXP_NAME='testV'
+IMAGE_NAME='DSC00580'
 IMAGE_EXT='jpg'
-TRAJ='black_carR'
-TRAJ_DESCRIPTION="Go to the black car visible on this scene, by first yawing right until aligned and then moving forward until you reach the car."
-# TRAJ_DESCRIPTION="Reach the chair in the corner of the room by flying over the table making sure not to collide with the table or the chairs in the middle of the scene. You should keep the target chair always in frame and stop when the target chair is the center of the view."
+TRAJ='corner_chairV'
+# TRAJ_DESCRIPTION="Go to the black car visible on this scene, by first yawing right until aligned and then moving forward until you reach the car."
+TRAJ_DESCRIPTION="Reach the chair in the corner of the room by flying over the table making sure not to collide with the table or the chairs in the middle of the scene. You should keep the target chair always in frame and stop when the target chair is the center of the view."
 # TRAJ_DESCRIPTION="Reach the blue trash bin in the end of the room by adjusting the yaw and pitch to have the target centered and after the centering is done advance towards the objective until you are in front of it."
+# TRAJ_DESCRIPTION="Move towards the red couch in front of you and then turn right in order to get to the open space" 
 
 # --prompt "${TRAJ_DESCRIPTION}" \
 # --prompt "Navigation through an indoor scene" \
@@ -28,7 +29,7 @@ cp images/${IMAGE_NAME}.${IMAGE_EXT} CUT3R/my_examples/${EXP_NAME}/frame_000.png
 cp images/${IMAGE_NAME}.${IMAGE_EXT} results/${EXP_NAME}/step00/rgb.png
 
 # Start loop
-for i in $(seq 1 10); do
+for i in $(seq 1 20); do
     echo "========== ITERATION $i =========="
 
     cd CUT3R
@@ -38,8 +39,14 @@ for i in $(seq 1 10); do
 
     echo RUNNING CUT3R
 
+    if [ "$i" -eq 1 ]; then
+        script="demo.py"
+    else
+        script="demo_ga.py"
+    fi
+
     # Initial CUT3R inference
-    python demo.py \
+    python "$script" \
         --model_path src/cut3r_512_dpt_4_64.pth \
         --seq_path my_examples/${EXP_NAME} \
         --device cuda \

@@ -131,40 +131,6 @@ class ViewCrafter:
         # Optionally clean the point cloud to remove noise or outliers
         self.scene = scene.clean_pointcloud() if clean_pc else scene
 
-    def run_mast3r(self, input_images, clean_pc=False):
-        """
-        Reconstruct a point cloud from one or more input images using the DUSt3R model.
-
-        Args:
-            input_images (list): List of preprocessed image tensors or dictionaries.
-            clean_pc (bool): Whether to apply cleaning to the raw point cloud output.
-
-        Side Effects:
-            Sets `self.scene` with a globally aligned (and optionally cleaned) point cloud.
-
-        Workflow:
-            1. Generates image pairs for stereo matching.
-            2. Runs DUSt3R to estimate depths and relative poses.
-            3. Performs global alignment across all images to build a coherent 3D scene.
-            4. Optionally cleans the resulting point cloud.
-        """
-        # Generate all possible image pairs with symmetry for stereo depth estimation
-        pairs = make_pairs(input_images, scene_graph='complete', prefilter=None, symmetrize=True)
-
-        # Perform depth estimation and pose prediction using DUSt3R
-        output = inference(pairs, self.mast3r, self.device, batch_size=self.opts.batch_size)
-
-        # Run global alignment to fuse depth maps and poses into a global point cloud
-        mode = GlobalAlignerMode.PointCloudOptimizer
-        scene = global_aligner(output, device=self.device, mode=mode)
-
-        # Optimize alignment across all images using minimum spanning tree initialization
-        if mode == GlobalAlignerMode.PointCloudOptimizer:
-            loss = scene.compute_global_alignment(init='mst', niter=self.opts.niter, schedule=self.opts.schedule, lr=self.opts.lr)
-
-        # Optionally clean the point cloud to remove noise or outliers
-        self.scene = scene.clean_pointcloud() if clean_pc else scene
-
     def render_pcd(self, pts3d, imgs, masks, views, renderer, device, colors=None):
         """
         Render RGB images from a colored 3D point cloud using the provided renderer.

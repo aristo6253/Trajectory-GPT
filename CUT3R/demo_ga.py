@@ -29,6 +29,9 @@ import shutil
 from copy import deepcopy
 from add_ckpt_path import add_path_to_dust3r
 import imageio.v2 as iio
+import matplotlib.cm as cm
+import json
+from my_utils import *
 
 # Set random seed for reproducibility.
 random.seed(42)
@@ -121,6 +124,12 @@ def parse_args():
         type=str,
         default="./demo_tmp",
         help="value for tempfile.tempdir",
+    )
+    parser.add_argument(
+        "--exp_name",
+        type=str,
+        default="001",
+        help="Name of the experiment",
     )
 
     return parser.parse_args()
@@ -405,23 +414,101 @@ def run_inference(args):
     colors_to_vis = [c.cpu().numpy() for c in colors]
     edge_colors = [None] * len(pts3ds_to_vis)
 
-    # Create and run the point cloud viewer.
-    print("Launching point cloud viewer...")
-    viewer = PointCloudViewer(
-        model,
-        state_args,
-        pts3ds_to_vis,
-        colors_to_vis,
-        conf,
-        cam_dict,
-        device=device,
-        edge_color_list=edge_colors,
-        show_camera=True,
-        vis_threshold=args.vis_threshold,
-        size=args.size,
-    )
-    viewer.run()
+    steps = len(pts3ds_to_vis)
 
+    # Read and organize data
+    pcs_dict, step_list, camera_colors = read_data(pts3ds_to_vis, colors_to_vis, conf, edge_colors)
+
+    # Export organized data to a .npz file
+    # export_visualization_data(f"{args.output_dir}/cut3r_vis_data.npz", pcs_dict, step_list, camera_colors) # DO I WANT THIS?
+    export_pcs_dict_to_json(pcs_dict, f"../results/{args.exp_name}/step{str(steps-1).zfill(2)}/pcs_data.json")
+
+    # visualize_npz(args.output_dir, args.output_dir, 'depth', exp_name=args.exp_name)
+    npz_to_png_depth(args.output_dir, args.output_dir, exp_name=args.exp_name)
+    obstacle_map(scene=args.output_dir, dbscan=True, exp_name=args.exp_name)
+
+    shutil.copy(os.path.join(args.output_dir, 'camera', '000000.npz'), f"../results/{args.exp_name}/camera.npz")
+
+
+    # Create and run the point cloud viewer.
+    # print("Launching point cloud viewer...")
+    # viewer = PointCloudViewer(
+    #     model,
+    #     state_args,
+    #     pts3ds_to_vis,
+    #     colors_to_vis,
+    #     conf,
+    #     cam_dict,
+    #     device=device,
+    #     edge_color_list=edge_colors,
+    #     show_camera=True,
+    #     vis_threshold=args.vis_threshold,
+    #     size=args.size,
+    # )
+    # viewer.run()
+
+def read_data(pc_list, color_list, conf_list, edge_color_list=None):
+    pcs = {}
+    step_list = []
+    for i, pc in enumerate(pc_list):
+        step = i
+        pcs.update(
+            {
+                step: {
+                    "pc": pc,
+                    "color": color_list[i],
+                    "conf": conf_list[i],
+                    "edge_color": (
+                        None if edge_color_list[i] is None else edge_color_list[i]
+                    ),
+                }
+            }
+        )
+        step_list.append(step)
+    normalized_indices = (
+        np.array(list(range(len(pc_list))))
+        / np.array(list(range(len(pc_list)))).max()
+    )
+    cmap = cm.viridis
+    camera_colors = cmap(normalized_indices)
+    return pcs, step_list, camera_colors
+
+def export_pcs_dict_to_json(pcs_dict, output_path):
+    serializable_dict = {}
+    for step, data in pcs_dict.items():
+        serializable_dict[step] = {
+            "pc": data["pc"].tolist(),
+            "color": data["color"].tolist(),
+            "conf": data["conf"].tolist(),
+            "edge_color": data["edge_color"].tolist() if data["edge_color"] is not None else None,
+        }
+
+    with open(output_path, "w") as f:
+        json.dump(serializable_dict, f)
+    print(f"Saved pcs_dict to {output_path}")
+
+def export_visualization_data(output_path, pcs_dict, step_list, camera_colors):
+    pcs = []
+    colors = []
+    confs = []
+    edge_colors = []
+
+    for step in step_list:
+        pcs.append(pcs_dict[step]["pc"])
+        colors.append(pcs_dict[step]["color"])
+        confs.append(pcs_dict[step]["conf"])
+        edge_colors.append(pcs_dict[step]["edge_color"] if pcs_dict[step]["edge_color"] is not None else np.array([0, 0, 0]))
+
+    np.savez_compressed(
+        output_path,
+        pcs=np.array(pcs, dtype=object),
+        colors=np.array(colors, dtype=object),
+        confs=np.array(confs, dtype=object),
+        steps=np.array(step_list),
+        camera_colors=np.array(camera_colors),
+        edge_colors=np.array(edge_colors)
+    )
+    print(f"Data saved to {output_path}")
 
 def main():
     args = parse_args()

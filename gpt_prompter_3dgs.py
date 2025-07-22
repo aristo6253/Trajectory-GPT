@@ -7,6 +7,9 @@ import cv2
 from openai import OpenAI
 import api_key
 import gpt_params
+import numpy as np
+import json
+from utils import *
 
 def encode_image(path):
     with open(path, "rb") as f:
@@ -44,8 +47,11 @@ def main():
     parser = argparse.ArgumentParser(description="6-DoF trajectory planning prompt")
     parser.add_argument("--traj_desc", type=str, help="Trajectory description")
     parser.add_argument("--exp_name", type=str, help="Experiment name under results/")
-    parser.add_argument("--traj_file", type=str, help="File where the trajectory step will be saved")
+    parser.add_argument("--traj_json", type=str, help="File where the trajectory step will be saved")
+    parser.add_argument("--incr_file", type=str, help="File where the trajectory increments will be saved")
+    parser.add_argument("--logic_file", type=str, help="File where the trajectory increments will be saved")
     parser.add_argument("--overlay_cross", action="store_true", help="Overlay red cross on rgb.png")
+    parser.add_argument("--model", type=str)
     args = parser.parse_args()
 
     traj_desc = args.traj_desc
@@ -53,7 +59,7 @@ def main():
 
     client = OpenAI(api_key=api_key.OPENAI_API)
 
-    base_dir = os.path.join("results", exp_name)
+    base_dir = os.path.join("results_3dgs", exp_name)
     max_step, step_path = get_latest_step_folder(base_dir)
 
     rgb0_path = os.path.join(base_dir, 'step00', "rgb.png")
@@ -63,6 +69,8 @@ def main():
     prompt_response_path = os.path.join(step_path, "prompt_and_response.txt")
     response_hist_path = os.path.join(base_dir, "response_history.txt")
 
+    # print(f"{gpt_params.SYSTEM_PROMPT.strip() =  }")
+
     if args.overlay_cross:
         guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
         overlay_red_cross(rgb_path, guided_rgb_path)
@@ -71,10 +79,12 @@ def main():
     traj_hist = ""
 
     if max_step > 0:
-        with open(args.traj_file, "r") as f:
-            lines = f.readlines()
+        with open(args.incr_file, "r") as f_incr, open(args.logic_file, "r") as f_logic:
+            incr_lines = f_incr.readlines()
+            logic_lines = f_logic.readlines()
             traj_hist = "\n".join(
-                [f"Step{i+1}: {line.strip()}" for i, line in enumerate(lines)]
+                [f"Step{i+1}: {incr.strip()} ({logic.strip()})"
+                for i, (incr, logic) in enumerate(zip(incr_lines, logic_lines))]
             )
     else:
         traj_hist = "(No Steps yet)"
@@ -95,11 +105,14 @@ Step History:
 {traj_hist}
 
 Reminder: Respond with:
-1. Step-by-step reasoning (max 4 lines)
-2. Motion command in format: `dx dy dz dyaw dpitch droll`
+1. Have some continuity reasoning
+2. Trajectory reasoning (max 4 lines)
+3. Checklist Verification
+4. Objective in format: ###\n(Objective)\n###
+5. Motion command in format: `dx dy dz dyaw dpitch droll`
 Follow camera-centric conventions exactly. No extra text.
 """
-    print(f"{full_user_prompt = }")
+    print(f"{full_user_prompt.strip() = }")
 
     # Create the prompt and image inputs
     messages = [
@@ -127,11 +140,64 @@ Follow camera-centric conventions exactly. No extra text.
     print(response.choices[0].message.content)
 
     text = response.choices[0].message.content
-    match = re.search(r"```(?:[^\n]*)\n(.*?)\n```", text, re.DOTALL)
+    step = re.search(r"```(?:[^\n]*)\n(.*?)\n```", text, re.DOTALL)
+    logic = re.search(r"###(?:[^\n]*)\n(.*?)\n###", text, re.DOTALL)
     # print(f"{match = }")
-    if match:
-        with open(args.traj_file, "a") as f:
-            f.write(match.group(1).strip() + "\n")
+    if step:
+        with open(args.incr_file, "a") as f:
+            f.write(step.group(1).strip() + "\n")
+    else:
+        raise ValueError("No motion command found in GPT response.")
+    
+    if logic:
+        with open(args.logic_file, "a") as f:
+            f.write(logic.group(1).strip() + "\n")
+    else:
+        raise ValueError("No logic command found in GPT response.")
+
+
+    ### Here we have the next step
+    ### We need to fetch the last extrinsic present in the json
+    last_pose_info = get_last_pose_info(args.traj_json)
+    R_prev = last_pose_info["R"]
+    t_prev = last_pose_info["t"]
+    ### Combine increment and extrinsic in order to find the next extrinsic
+    incr_vals = list(map(float, step.group(1).strip().split()))
+    dx, dy, dz, dyaw, dpitch, droll = incr_vals
+    T_delta = extrinsic_matrix(dyaw, dpitch, -droll, [dx, -dy, dz])
+
+    T_prev = np.eye(4)
+    T_prev[:3, :3] = R_prev
+    T_prev[:3, 3] = t_prev.flatten()
+
+    T_next = T_prev @ T_delta
+    R_next = T_next[:3, :3]
+    t_next = T_next[:3, 3].reshape(3, 1)
+
+    ### Save the new extrinsic in the json
+    with open(args.traj_json, "r") as f:
+        traj_data = json.load(f)
+
+    new_pose = {
+        "id": last_pose_info["id"] + 1,
+        "img_name": f"step{max_step+1:02}/rgb.png",
+        "width": last_pose_info["width"],
+        "height": last_pose_info["height"],
+        "position": t_next.flatten().tolist(),
+        "rotation": R_next.tolist(),
+        "fx": last_pose_info["fx"],
+        "fy": last_pose_info["fy"]
+    }
+
+    traj_data.append(new_pose)
+
+    with open(args.traj_json, "w") as f:
+        json.dump(traj_data, f, indent=4)
+
+    with open(f"{args.model}/{args.exp_name}.json", "w") as f:
+        json.dump(traj_data, f, indent=4)
+
+
 
     with open(prompt_response_path, "w") as f:
         f.write("=== Prompt ===\n")

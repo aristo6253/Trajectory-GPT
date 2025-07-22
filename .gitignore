@@ -2,6 +2,7 @@ api_key.py
 visuals.ipynb
 __pycache__/
 results/*
+results_3dgs/*
 !results/.gitkeep
 ViewCrafter/output/*
 CUT3R/output/*

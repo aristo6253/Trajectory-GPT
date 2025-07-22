@@ -1,16 +1,56 @@
+#!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='testV'
-TRAJ='corner_chairV'
-model='output/garden_test'
-TRAJ_DESCRIPTION="Reach the chair in the corner of the room by flying over the table making sure not to collide with the table or the chairs in the middle of the scene. You should keep the target chair always in frame and stop when the target chair is the center of the view."
+EXP_NAME='blackdoorA'
+TRAJ_DESCRIPTION="Move towards the black door by avoiding the table in front of you, not going over it but sliding to the left and then moving towards our objective, the black door."
+MODEL='output/garden_test'
+SOURCE_TRAJ="/n/holylfs05/LABS/pfister_lab/Lab/coxfs01/pfister_lab2/Lab/aristo/TrajectoryGPT/gaussian-splatting/output/garden_test/source_trajectory.json"
 
+echo "========== EXPERIMENT SETUP =========="
+echo "EXP_NAME: ${EXP_NAME}"
+echo "MODEL: ${MODEL}"
+echo "TRAJ_DESCRIPTION: ${TRAJ_DESCRIPTION}"
 
-# Provide starting position, having a json with one entry with (R, T, FoVx, FoVy, width, height, id=step)
-python render.py -m ${model} --my_traj --trajectory_file ${TRAJ}.json
+mkdir -p results_3dgs/${EXP_NAME}/step00
+cp ${SOURCE_TRAJ} results_3dgs/${EXP_NAME}/trajectory.json
+cp results_3dgs/${EXP_NAME}/trajectory.json gaussian-splatting/${MODEL}/${EXP_NAME}.json
+touch results_3dgs/${EXP_NAME}/increments.txt
+touch results_3dgs/${EXP_NAME}/logic.txt
 
-# Generate depth and bev
+echo "ACTIVATING ENVIRONMENT: gaussian_splatting"
+source activate gaussian_splatting
 
-# Provide everything to the gpt
+for i in $(seq 0 19); do
+    STEP_DIR=results_3dgs/${EXP_NAME}/step$(printf "%02d" $i)
+    echo "========== ITERATION $i =========="
+    echo "Creating step directory: ${STEP_DIR}"
+    mkdir -p ${STEP_DIR}
 
-# Transform the gpt output to an extrinsic matrix (R and T), follow ViewCrafter trajectory creation method
+    echo "RENDERING VIEW FROM TRAJECTORY JSON"
+    cd gaussian-splatting
+    python render.py -m ${MODEL} --my_traj --trajectory_file ${EXP_NAME}.json --exp_name ${EXP_NAME}
+    cd ..
+
+    echo "COMPUTING BEV DEPTH"
+    python depth_bev.py \
+        --ply gaussian-splatting/${MODEL}/point_cloud/iteration_30000/point_cloud.ply \
+        --json gaussian-splatting/${MODEL}/${EXP_NAME}.json \
+        --step ${i} \
+        --exp_name ${EXP_NAME}
+
+    echo "GENERATING GPT TRAJECTORY STEP"
+    python gpt_prompter_3dgs.py \
+        --traj_desc "${TRAJ_DESCRIPTION}" \
+        --exp_name ${EXP_NAME} \
+        --traj_json results_3dgs/${EXP_NAME}/trajectory.json \
+        --incr_file results_3dgs/${EXP_NAME}/increments.txt \
+        --logic_file results_3dgs/${EXP_NAME}/logic.txt \
+        --overlay_cross \
+        --model gaussian-splatting/${MODEL}
+
+    # Add here any post-processing step to turn GPT output into extrinsics if needed
+
+    echo "========== END OF ITERATION $i =========="
+done
+
+echo "========== ALL ITERATIONS COMPLETE =========="

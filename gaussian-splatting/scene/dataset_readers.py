@@ -377,27 +377,26 @@ def readHandcraftedCameras(trajectory_file):
 
 
 def readTrajectorySceneInfo(path, trajectory_file):
-    print(f"{os.path.join(path, 'trajectory.json') = }")
     cam_infos = readHandcraftedCameras(os.path.join(path, trajectory_file))
 
     traj_cam_infos = [c for c in cam_infos] # Is this correct?
 
-    print(f"{len(traj_cam_infos) = }")
-    for i, cam_info in enumerate(traj_cam_infos):
-        if cam_info.image_name == 'DSC07956.png':
-            print(f"{i = }")
-            print("JSON R:\n", cam_info.R)
-            print("JSON T:\n", cam_info.T)
+    # print(f"{len(traj_cam_infos) = }")
+    # for i, cam_info in enumerate(traj_cam_infos):
+    #     if cam_info.image_name == 'DSC07956.png':
+    #         print(f"{i = }")
+    #         print("JSON R:\n", cam_info.R)
+    #         print("JSON T:\n", cam_info.T)
 
-            fx = fov2focal(cam_info.FovX, cam_info.width)
-            fy = fov2focal(cam_info.FovY, cam_info.height)
+    #         fx = fov2focal(cam_info.FovX, cam_info.width)
+    #         fy = fov2focal(cam_info.FovY, cam_info.height)
 
-            print(f"fx (from FoVx): {fx:.6f}")
-            print(f"fy (from FoVy): {fy:.6f}")
-            print(f"width: {cam_info.width}")
-            print(f"height: {cam_info.height}")
-            print(f"FoVx: {cam_info.FovX:.6f} rad  ({np.degrees(cam_info.FovX):.2f}°)")
-            print(f"FoVy: {cam_info.FovY:.6f} rad  ({np.degrees(cam_info.FovY):.2f}°)")
+    #         print(f"fx (from FoVx): {fx:.6f}")
+    #         print(f"fy (from FoVy): {fy:.6f}")
+    #         print(f"width: {cam_info.width}")
+    #         print(f"height: {cam_info.height}")
+    #         print(f"FoVx: {cam_info.FovX:.6f} rad  ({np.degrees(cam_info.FovX):.2f}°)")
+    #         print(f"FoVy: {cam_info.FovY:.6f} rad  ({np.degrees(cam_info.FovY):.2f}°)")
 
     nerf_normalization = getNerfppNorm(traj_cam_infos)
 
