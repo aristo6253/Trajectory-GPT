@@ -44,7 +44,9 @@ def main():
     parser = argparse.ArgumentParser(description="6-DoF trajectory planning prompt")
     parser.add_argument("--traj_desc", type=str, help="Trajectory description")
     parser.add_argument("--exp_name", type=str, help="Experiment name under results/")
-    parser.add_argument("--traj_file", type=str, help="File where the trajectory step will be saved")
+    # parser.add_argument("--traj_file", type=str, help="File where the trajectory step will be saved")
+    parser.add_argument("--incr_file", type=str, help="File where the trajectory increments will be saved")
+    parser.add_argument("--logic_file", type=str, help="File where the trajectory increments will be saved")
     parser.add_argument("--overlay_cross", action="store_true", help="Overlay red cross on rgb.png")
     args = parser.parse_args()
 
@@ -71,10 +73,12 @@ def main():
     traj_hist = ""
 
     if max_step > 0:
-        with open(args.traj_file, "r") as f:
-            lines = f.readlines()
+        with open(args.incr_file, "r") as f_incr, open(args.logic_file, "r") as f_logic:
+            incr_lines = f_incr.readlines()
+            logic_lines = f_logic.readlines()
             traj_hist = "\n".join(
-                [f"Step{i+1}: {line.strip()}" for i, line in enumerate(lines)]
+                [f"Step{i+1}: {incr.strip()} ({logic.strip()})"
+                for i, (incr, logic) in enumerate(zip(incr_lines, logic_lines))]
             )
     else:
         traj_hist = "(No Steps yet)"
@@ -95,8 +99,11 @@ Step History:
 {traj_hist}
 
 Reminder: Respond with:
-1. Step-by-step reasoning (max 4 lines)
-2. Motion command in format: `dx dy dz dyaw dpitch droll`
+1. Have some continuity reasoning
+2. Trajectory reasoning (max 4 lines)
+3. Checklist Verification
+4. Objective in format: ###\n(Objective)\n###
+5. Motion command in format: `dx dy dz dyaw dpitch droll`
 Follow camera-centric conventions exactly. No extra text.
 """
     print(f"{full_user_prompt = }")
@@ -127,13 +134,20 @@ Follow camera-centric conventions exactly. No extra text.
     print(response.choices[0].message.content)
 
     text = response.choices[0].message.content
-    match = re.search(r"```(?:[^\n]*)\n(.*?)\n```", text, re.DOTALL)
+    step = re.search(r"```(?:[^\n]*)\n(.*?)\n```", text, re.DOTALL)
+    logic = re.search(r"###(?:[^\n]*)\n(.*?)\n###", text, re.DOTALL)
     # print(f"{match = }")
-    if match:
-        with open(args.traj_file, "a") as f:
-            f.write(match.group(1).strip() + "\n")
+    if step:
+        with open(args.incr_file, "a") as f:
+            f.write(step.group(1).strip() + "\n")
     else:
         raise ValueError("No motion command found in GPT response.")
+    
+    if logic:
+        with open(args.logic_file, "a") as f:
+            f.write(logic.group(1).strip() + "\n")
+    else:
+        raise ValueError("No logic command found in GPT response.")
 
     with open(prompt_response_path, "w") as f:
         f.write("=== Prompt ===\n")

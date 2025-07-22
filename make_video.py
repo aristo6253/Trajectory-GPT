@@ -1,7 +1,7 @@
 import argparse
 import os
 import re
-import imageio
+import imageio.v2 as imageio
 from pathlib import Path
 
 def get_sorted_rgb_images(folder):
@@ -21,6 +21,7 @@ def make_mp4(images, output_path, fps):
     writer.close()
 
 def make_gif(images, output_path, fps):
+    print(f"{fps = }")
     duration = 1.0 / fps
     frames = [imageio.imread(img) for img in images]
     imageio.mimsave(output_path, frames, format='GIF', duration=duration)
@@ -30,7 +31,7 @@ def main():
     parser.add_argument("folder", help="Folder containing stepXX subfolders.")
     parser.add_argument("--mp4", action="store_true", help="Generate MP4 video.")
     parser.add_argument("--gif", action="store_true", help="Generate GIF.")
-    parser.add_argument("--fps", type=int, default=10, help="Frames per second (default: 10).")
+    parser.add_argument("--fps", type=float, default=10, help="Frames per second (default: 10).")
     parser.add_argument("--output", type=str, default=None, help="Base name for output files.")
 
     args = parser.parse_args()

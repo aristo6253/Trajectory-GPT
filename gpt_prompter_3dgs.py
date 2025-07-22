@@ -69,8 +69,6 @@ def main():
     prompt_response_path = os.path.join(step_path, "prompt_and_response.txt")
     response_hist_path = os.path.join(base_dir, "response_history.txt")
 
-    # print(f"{gpt_params.SYSTEM_PROMPT.strip() =  }")
-
     if args.overlay_cross:
         guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
         overlay_red_cross(rgb_path, guided_rgb_path)
@@ -112,7 +110,7 @@ Reminder: Respond with:
 5. Motion command in format: `dx dy dz dyaw dpitch droll`
 Follow camera-centric conventions exactly. No extra text.
 """
-    print(f"{full_user_prompt.strip() = }")
+    print(f"{full_user_prompt = }")
 
     # Create the prompt and image inputs
     messages = [
