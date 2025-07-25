@@ -1,8 +1,11 @@
 #!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='blackdoorA'
-TRAJ_DESCRIPTION="Move towards the black door by avoiding the table in front of you, not going over it but sliding to the left and then moving towards our objective, the black door."
+EXP_NAME='garden_align_nc002'
+# TRAJ_DESCRIPTION="Move towards the black door by avoiding the table in front of you, not going over it but sliding to the left and then moving towards our objective, the black door."
+# TRAJ_DESCRIPTION="Can you go around the table making walking in a square avoiding going over the table start by turning left and then start your path" 
+TRAJ_DESCRIPTION="Yaw and pitch so that the black door to the top-left is aligned perfectly with the camera."
+# TRAJ_DESCRIPTION="Yaw to the left and have a rightwards motion to explore the scene by moving around the table."
 MODEL='output/garden_test'
 SOURCE_TRAJ="/n/holylfs05/LABS/pfister_lab/Lab/coxfs01/pfister_lab2/Lab/aristo/TrajectoryGPT/gaussian-splatting/output/garden_test/source_trajectory.json"
 
@@ -28,7 +31,11 @@ for i in $(seq 0 19); do
 
     echo "RENDERING VIEW FROM TRAJECTORY JSON"
     cd gaussian-splatting
-    python render.py -m ${MODEL} --my_traj --trajectory_file ${EXP_NAME}.json --exp_name ${EXP_NAME}
+    python render.py -m ${MODEL} \
+     --my_traj \
+     --trajectory_file ${EXP_NAME}.json \
+     --exp_name ${EXP_NAME}
+
     cd ..
 
     echo "COMPUTING BEV DEPTH"
@@ -45,8 +52,9 @@ for i in $(seq 0 19); do
         --traj_json results_3dgs/${EXP_NAME}/trajectory.json \
         --incr_file results_3dgs/${EXP_NAME}/increments.txt \
         --logic_file results_3dgs/${EXP_NAME}/logic.txt \
-        --overlay_cross \
-        --model gaussian-splatting/${MODEL}
+        --model gaussian-splatting/${MODEL} \
+        # --overlay_cross \
+        # --preplanned_traj results_3dgs/explore.txt
 
     # Add here any post-processing step to turn GPT output into extrinsics if needed
 

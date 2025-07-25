@@ -21,10 +21,10 @@ def make_mp4(images, output_path, fps):
     writer.close()
 
 def make_gif(images, output_path, fps):
-    print(f"{fps = }")
     duration = 1.0 / fps
     frames = [imageio.imread(img) for img in images]
-    imageio.mimsave(output_path, frames, format='GIF', duration=duration)
+    imageio.mimsave(output_path, frames, format='GIF', duration=duration, loop=0)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Make MP4 and/or GIF from stepXX/rgb.png images.")

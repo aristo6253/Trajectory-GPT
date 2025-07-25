@@ -51,50 +51,72 @@ def main():
     parser.add_argument("--incr_file", type=str, help="File where the trajectory increments will be saved")
     parser.add_argument("--logic_file", type=str, help="File where the trajectory increments will be saved")
     parser.add_argument("--overlay_cross", action="store_true", help="Overlay red cross on rgb.png")
+    parser.add_argument('--preplanned_traj', type=str, default='NULL', help="Skip gpt for testing purposes")
+    parser.add_argument('--test', type=str, default='full', choices=['full', 'cot', 'dnb', 'basic'], help="")
     parser.add_argument("--model", type=str)
     args = parser.parse_args()
 
     traj_desc = args.traj_desc
     exp_name = args.exp_name
 
-    client = OpenAI(api_key=api_key.OPENAI_API)
+    if args.preplanned_traj == 'NULL':
 
-    base_dir = os.path.join("results_3dgs", exp_name)
-    max_step, step_path = get_latest_step_folder(base_dir)
+        if args.test == 'full':
+            print("FULL PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_FULL
+        elif args.test == 'cot':
+            print("COT PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_COT
+        elif args.test == 'dnb':
+            print("DNB PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_DNB
+        elif args.text == 'basic':
+            print("BASIC PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_BASIC
 
-    rgb0_path = os.path.join(base_dir, 'step00', "rgb.png")
-    rgb_path = os.path.join(step_path, "rgb.png")
-    depth_path = os.path.join(step_path, "depth.png")
-    bev_path = os.path.join(step_path, "bev.png")
-    prompt_response_path = os.path.join(step_path, "prompt_and_response.txt")
-    response_hist_path = os.path.join(base_dir, "response_history.txt")
+        client = OpenAI(api_key=api_key.OPENAI_API)
 
-    if args.overlay_cross:
-        guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
-        overlay_red_cross(rgb_path, guided_rgb_path)
+        base_dir = os.path.join("results_3dgs", exp_name)
+        max_step, step_path = get_latest_step_folder(base_dir)
 
+        rgb0_path = os.path.join(base_dir, 'step00', "rgb.png")
+        rgb_path = os.path.join(step_path, "rgb.png")
+        if args.test in ['full', 'dnb']:
+            depth_path = os.path.join(step_path, "depth.png")
+            bev_path = os.path.join(step_path, "bev.png")
+        prompt_response_path = os.path.join(step_path, "prompt_and_response.txt")
+        response_hist_path = os.path.join(base_dir, "response_history.txt")
 
-    traj_hist = ""
-
-    if max_step > 0:
-        with open(args.incr_file, "r") as f_incr, open(args.logic_file, "r") as f_logic:
-            incr_lines = f_incr.readlines()
-            logic_lines = f_logic.readlines()
-            traj_hist = "\n".join(
-                [f"Step{i+1}: {incr.strip()} ({logic.strip()})"
-                for i, (incr, logic) in enumerate(zip(incr_lines, logic_lines))]
-            )
-    else:
-        traj_hist = "(No Steps yet)"
-
-    # Encode images
-    rgb0_b64 = encode_image(rgb0_path)
-    rgb_b64 = encode_image(guided_rgb_path) if args.overlay_cross else encode_image(rgb_path)
-    depth_b64 = encode_image(depth_path)
-    bev_b64 = encode_image(bev_path)
+        if args.overlay_cross:
+            guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
+            overlay_red_cross(rgb_path, guided_rgb_path)
 
 
-    full_user_prompt = f"""Trajectory Step {max_step} — Plan the next move.
+        traj_hist = ""
+
+        if max_step > 0:
+            with open(args.incr_file, "r") as f_incr, open(args.logic_file, "r") as f_logic:
+                incr_lines = f_incr.readlines()
+                logic_lines = f_logic.readlines()
+
+                start_idx = max(0, len(incr_lines) - 5)
+                recent = zip(incr_lines[start_idx:], logic_lines[start_idx:])
+
+                traj_hist = "\n".join(
+                    [f"Step{start_idx + i + 1}: {incr.strip()} ({logic.strip() if args.test in ['full', 'cot'] else ''})"
+                     for i, (incr, logic) in enumerate(recent)]
+                )
+        else:
+            traj_hist = "(No Steps yet)"
+
+        # Encode images
+        rgb0_b64 = encode_image(rgb0_path)
+        rgb_b64 = encode_image(guided_rgb_path) if args.overlay_cross else encode_image(rgb_path)
+        depth_b64 = encode_image(depth_path)
+        bev_b64 = encode_image(bev_path)
+
+
+        full_user_prompt = f"""Trajectory Step {max_step} — Plan the next move.
 
 Goal:
 {traj_desc}
@@ -110,102 +132,166 @@ Reminder: Respond with:
 5. Motion command in format: `dx dy dz dyaw dpitch droll`
 Follow camera-centric conventions exactly. No extra text.
 """
-    print(f"{full_user_prompt = }")
+        print(f"{full_user_prompt = }")
 
-    # Create the prompt and image inputs
-    messages = [
-        {"role": "system", "content": gpt_params.SYSTEM_PROMPT.strip()},
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": full_user_prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb0_b64}"}},
-                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb_b64}"}},
+        user_content = [
+            {"type": "text", "text": full_user_prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb0_b64}"}},
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb_b64}"}},
+        ]
+
+        if args.test in ['full', 'dnb']:
+            user_content.extend([
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{depth_b64}"}},
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{bev_b64}"}},
-            ]
+            ])
+
+        # Create the prompt and image inputs
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT.strip()},
+            {"role": "user", "content": user_content}
+        ]
+
+
+
+        # Send request
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+        )
+
+        # Output response
+        print(response.choices[0].message.content)
+
+        text = response.choices[0].message.content
+        step = re.search(r"```(?:[^\n]*)\n(.*?)\n```", text, re.DOTALL)
+        logic = re.search(r"###(?:[^\n]*)\n(.*?)\n###", text, re.DOTALL)
+        # print(f"{match = }")
+        if step:
+            with open(args.incr_file, "a") as f:
+                f.write(step.group(1).strip() + "\n")
+        else:
+            raise ValueError("No motion command found in GPT response.")
+        
+        if logic and args.test in ['full', 'cot']:
+            with open(args.logic_file, "a") as f:
+                f.write(logic.group(1).strip() + "\n")
+        else:
+            raise ValueError("No logic command found in GPT response.")
+
+
+        ### Here we have the next step
+        ### We need to fetch the last extrinsic present in the json
+        last_pose_info = get_last_pose_info(args.traj_json)
+        R_prev = last_pose_info["R"]
+        t_prev = last_pose_info["t"]
+        ### Combine increment and extrinsic in order to find the next extrinsic
+        incr_vals = list(map(float, step.group(1).strip().split()))
+        dx, dy, dz, dyaw, dpitch, droll = incr_vals
+        T_delta = extrinsic_matrix(dyaw, dpitch, -droll, [dx, -dy, dz])
+
+        T_prev = np.eye(4)
+        T_prev[:3, :3] = R_prev
+        T_prev[:3, 3] = t_prev.flatten()
+
+        T_next = T_prev @ T_delta
+        R_next = T_next[:3, :3]
+        t_next = T_next[:3, 3].reshape(3, 1)
+
+        ### Save the new extrinsic in the json
+        with open(args.traj_json, "r") as f:
+            traj_data = json.load(f)
+
+        new_pose = {
+            "id": last_pose_info["id"] + 1,
+            "img_name": f"step{max_step+1:02}/rgb.png",
+            "width": last_pose_info["width"],
+            "height": last_pose_info["height"],
+            "position": t_next.flatten().tolist(),
+            "rotation": R_next.tolist(),
+            "fx": last_pose_info["fx"],
+            "fy": last_pose_info["fy"]
         }
-    ]
+
+        traj_data.append(new_pose)
+
+        with open(args.traj_json, "w") as f:
+            json.dump(traj_data, f, indent=4)
+
+        with open(f"{args.model}/{args.exp_name}.json", "w") as f:
+            json.dump(traj_data, f, indent=4)
 
 
-    # Send request
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=messages,
-    )
 
-    # Output response
-    print(response.choices[0].message.content)
+        with open(prompt_response_path, "w") as f:
+            f.write("=== Prompt ===\n")
+            f.write(full_user_prompt.strip() + "\n\n")
+            f.write("=== Response ===\n")
+            f.write(response.choices[0].message.content.strip() + "\n")
 
-    text = response.choices[0].message.content
-    step = re.search(r"```(?:[^\n]*)\n(.*?)\n```", text, re.DOTALL)
-    logic = re.search(r"###(?:[^\n]*)\n(.*?)\n###", text, re.DOTALL)
-    # print(f"{match = }")
-    if step:
+        with open(response_hist_path, "a") as f:
+            f.write(f"\n=== Response {max_step} ===\n")
+            f.write(text.strip() + "\n")
+    else:
+        base_dir = os.path.join("results_3dgs", exp_name)
+        max_step, _ = get_latest_step_folder(base_dir)
+        step_idx = max_step# + 1
+
+        with open(args.preplanned_traj, "r") as f:
+            lines = f.readlines()
+
+        if step_idx >= len(lines):
+            raise IndexError(f"Preplanned trajectory does not contain step {step_idx}")
+
+        incr_line = lines[step_idx].strip()
+        if not incr_line:
+            raise ValueError(f"Preplanned trajectory at step {step_idx} is empty")
+
         with open(args.incr_file, "a") as f:
-            f.write(step.group(1).strip() + "\n")
-    else:
-        raise ValueError("No motion command found in GPT response.")
-    
-    if logic:
+            f.write(incr_line + "\n")
+
         with open(args.logic_file, "a") as f:
-            f.write(logic.group(1).strip() + "\n")
-    else:
-        raise ValueError("No logic command found in GPT response.")
+            f.write(f"(Preplanned step {step_idx})\n")
 
+        # Get last extrinsic
+        last_pose_info = get_last_pose_info(args.traj_json)
+        R_prev = last_pose_info["R"]
+        t_prev = last_pose_info["t"]
 
-    ### Here we have the next step
-    ### We need to fetch the last extrinsic present in the json
-    last_pose_info = get_last_pose_info(args.traj_json)
-    R_prev = last_pose_info["R"]
-    t_prev = last_pose_info["t"]
-    ### Combine increment and extrinsic in order to find the next extrinsic
-    incr_vals = list(map(float, step.group(1).strip().split()))
-    dx, dy, dz, dyaw, dpitch, droll = incr_vals
-    T_delta = extrinsic_matrix(dyaw, dpitch, -droll, [dx, -dy, dz])
+        # Compute next extrinsic
+        dx, dy, dz, dyaw, dpitch, droll = map(float, incr_line.split())
+        T_delta = extrinsic_matrix(dyaw, dpitch, -droll, [dx, -dy, dz])
 
-    T_prev = np.eye(4)
-    T_prev[:3, :3] = R_prev
-    T_prev[:3, 3] = t_prev.flatten()
+        T_prev = np.eye(4)
+        T_prev[:3, :3] = R_prev
+        T_prev[:3, 3] = t_prev.flatten()
+        T_next = T_prev @ T_delta
+        R_next = T_next[:3, :3]
+        t_next = T_next[:3, 3].reshape(3, 1)
 
-    T_next = T_prev @ T_delta
-    R_next = T_next[:3, :3]
-    t_next = T_next[:3, 3].reshape(3, 1)
+        # Append to trajectory JSON
+        with open(args.traj_json, "r") as f:
+            traj_data = json.load(f)
 
-    ### Save the new extrinsic in the json
-    with open(args.traj_json, "r") as f:
-        traj_data = json.load(f)
+        new_pose = {
+            "id": last_pose_info["id"] + 1,
+            "img_name": f"step{step_idx:02}/rgb.png",
+            "width": last_pose_info["width"],
+            "height": last_pose_info["height"],
+            "position": t_next.flatten().tolist(),
+            "rotation": R_next.tolist(),
+            "fx": last_pose_info["fx"],
+            "fy": last_pose_info["fy"]
+        }
 
-    new_pose = {
-        "id": last_pose_info["id"] + 1,
-        "img_name": f"step{max_step+1:02}/rgb.png",
-        "width": last_pose_info["width"],
-        "height": last_pose_info["height"],
-        "position": t_next.flatten().tolist(),
-        "rotation": R_next.tolist(),
-        "fx": last_pose_info["fx"],
-        "fy": last_pose_info["fy"]
-    }
+        traj_data.append(new_pose)
 
-    traj_data.append(new_pose)
+        with open(args.traj_json, "w") as f:
+            json.dump(traj_data, f, indent=4)
 
-    with open(args.traj_json, "w") as f:
-        json.dump(traj_data, f, indent=4)
+        with open(f"{args.model}/{args.exp_name}.json", "w") as f:
+            json.dump(traj_data, f, indent=4)
 
-    with open(f"{args.model}/{args.exp_name}.json", "w") as f:
-        json.dump(traj_data, f, indent=4)
-
-
-
-    with open(prompt_response_path, "w") as f:
-        f.write("=== Prompt ===\n")
-        f.write(full_user_prompt.strip() + "\n\n")
-        f.write("=== Response ===\n")
-        f.write(response.choices[0].message.content.strip() + "\n")
-
-    with open(response_hist_path, "a") as f:
-        f.write(f"\n=== Response {max_step} ===\n")
-        f.write(text.strip() + "\n")
 
 if __name__ == "__main__":
     main()

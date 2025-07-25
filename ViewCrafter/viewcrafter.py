@@ -394,7 +394,7 @@ class ViewCrafter:
         # Set the first frame to be the original input image
         for i in range(len(frame_idx) - 1): # Skip the last one (we haven't calculated it yet) 
             # print(f"{frame_idx[i] = }")
-            frame_dir = f'../results/{self.opts.exp_id}/step{str(i).zfill(2)}/rgb.png'
+            frame_dir = f'../results_diff/{self.opts.exp_id}/step{str(i).zfill(2)}/rgb.png'
             render_results[frame_idx[i]] = torch.from_numpy(np.array(Image.open(frame_dir).convert("RGB").resize((1024, 576), Image.BILINEAR))).float() / 255.0
         
         # render_results[0] = self.img_ori if self.opts.testing
@@ -402,7 +402,7 @@ class ViewCrafter:
         # Save rendered trajectory as video
         if self.opts.testing:
             save_video(render_results, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'render.mp4'))
-        # save_video(render_results, f'../results/{self.opts.exp_id}/step{str(i).zfill(2)}/render.mp4')
+        # save_video(render_results, f'../results_diff/{self.opts.exp_id}/step{str(i).zfill(2)}/render.mp4')
 
         # Optionally save point cloud with camera poses for visualization
         if self.opts.pcd_dir is None:
@@ -413,13 +413,13 @@ class ViewCrafter:
 
         # Save diffusion output as a video (normalized back to [0, 1])
         # save_video((diffusion_results + 1.0) / 2.0, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'diffusion.mp4'))
-        save_video((diffusion_results + 1.0) / 2.0, f'../results/{self.opts.exp_id}/step{str(i).zfill(2)}/diffusion.mp4')
+        save_video((diffusion_results + 1.0) / 2.0, f'../results_diff/{self.opts.exp_id}/step{str(i).zfill(2)}/diffusion.mp4')
 
 
 
         save_path  = os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'last_frame.jpg')
 
-        os.makedirs(f"../results/{self.opts.exp_id}/step{str(self.step).zfill(2)}", exist_ok=True)
+        os.makedirs(f"../results_diff/{self.opts.exp_id}/step{str(self.step).zfill(2)}", exist_ok=True)
 
         img = diffusion_results[-1].detach().cpu()          # H×W×3, float16/32, range [-1,1]
         img = ((img + 1) / 2).float()                       # → float32, [0,1]
@@ -428,7 +428,7 @@ class ViewCrafter:
         if not self.opts.testing:
             # Image.fromarray(img).save(save_path, quality=95)
             Image.fromarray(img).save(f'../CUT3R/my_examples/{self.opts.exp_id}/frame_{str(self.step).zfill(3)}.jpg', quality=95)
-            Image.fromarray(img).save(f'../results/{self.opts.exp_id}/step{str(self.step).zfill(2)}/rgb.png', quality=95)
+            Image.fromarray(img).save(f'../results_diff/{self.opts.exp_id}/step{str(self.step).zfill(2)}/rgb.png', quality=95)
 
         print("Execution Over.")
 

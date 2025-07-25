@@ -421,13 +421,13 @@ def run_inference(args):
 
     # Export organized data to a .npz file
     # export_visualization_data(f"{args.output_dir}/cut3r_vis_data.npz", pcs_dict, step_list, camera_colors) # DO I WANT THIS?
-    export_pcs_dict_to_json(pcs_dict, f"../results/{args.exp_name}/step{str(steps-1).zfill(2)}/pcs_data.json")
+    export_pcs_dict_to_json(pcs_dict, f"../results_diff/{args.exp_name}/step{str(steps-1).zfill(2)}/pcs_data.json")
 
     # visualize_npz(args.output_dir, args.output_dir, 'depth', exp_name=args.exp_name)
     npz_to_png_depth(args.output_dir, args.output_dir, exp_name=args.exp_name)
     obstacle_map(scene=args.output_dir, dbscan=True, exp_name=args.exp_name)
 
-    shutil.copy(os.path.join(args.output_dir, 'camera', '000000.npz'), f"../results/{args.exp_name}/camera.npz")
+    shutil.copy(os.path.join(args.output_dir, 'camera', '000000.npz'), f"../results_diff/{args.exp_name}/camera.npz")
 
 
     # Create and run the point cloud viewer.
@@ -485,7 +485,7 @@ def export_pcs_dict_to_json(pcs_dict, output_path):
 
     with open(output_path, "w") as f:
         json.dump(serializable_dict, f)
-    print(f"Saved pcs_dict to {output_path}")
+    # print(f"Saved pcs_dict to {output_path}")
 
 def export_visualization_data(output_path, pcs_dict, step_list, camera_colors):
     pcs = []

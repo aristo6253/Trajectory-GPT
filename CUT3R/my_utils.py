@@ -14,8 +14,8 @@ def npz_to_png_depth(path, savedir, save=True, exp_name=None):
 
     step = str(len(data_dir) - 1)
 
-    # print(f"Creating: ../results/{exp_name}/step{step.zfill(2)}")
-    os.makedirs(f"../results/{exp_name}/step{step.zfill(2)}", exist_ok=True)
+    # print(f"Creating: ../results_diff/{exp_name}/step{step.zfill(2)}")
+    os.makedirs(f"../results_diff/{exp_name}/step{step.zfill(2)}", exist_ok=True)
 
     # print(f"{os.path.join(os.path.join(path, 'depth'), data) = }")
     try:
@@ -30,7 +30,7 @@ def npz_to_png_depth(path, savedir, save=True, exp_name=None):
     plt.show()
     plt.savefig(f"{savedir}/depth_{step.zfill(3)}.png")
     if save:
-        plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/depth.png")
+        plt.savefig(f"../results_diff/{exp_name}/step{step.zfill(2)}/depth.png")
 
 
 def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
@@ -43,7 +43,7 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
     step = str(len(data_dir) - 1)
 
     # print(f"Creating: ../results/{exp_name}/step{step.zfill(2)}")
-    os.makedirs(f"../results/{exp_name}/step{step.zfill(2)}", exist_ok=True)
+    os.makedirs(f"../results_diff/{exp_name}/step{step.zfill(2)}", exist_ok=True)
 
     # print(f"{os.path.join(os.path.join(path, visualizing), data) = }")
     try:
@@ -60,7 +60,7 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
             plt.show()
             plt.savefig(f"{savedir}/{visualizing}_{step.zfill(3)}.png")
             if save:
-                plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/depth.png")
+                plt.savefig(f"../results_diff/{exp_name}/step{step.zfill(2)}/depth.png")
 
         elif data.ndim == 2:
             plt.imshow(data, cmap='viridis_r')
@@ -69,7 +69,7 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
             plt.show()
             plt.savefig(f"{savedir}/{visualizing}_{step.zfill(3)}.png")
             if save:
-                plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/depth.png")
+                plt.savefig(f"../results_diff/{exp_name}/step{step.zfill(2)}/depth.png")
 
         elif data.ndim == 3:
             plt.imshow(data[0], cmap='viridis_r')
@@ -78,7 +78,7 @@ def visualize_npz(path, savedir, visualizing='depth', save=True, exp_name=None):
             plt.show()
             plt.savefig(f"{savedir}/{visualizing}_{step.zfill(3)}.png")
             if save:
-                plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/depth.png")
+                plt.savefig(f"../results_diff/{exp_name}/step{step.zfill(2)}/depth.png")
 
         else:
             print(f"Cannot auto-visualize array with ndim={data.ndim}")
@@ -159,7 +159,7 @@ def render_bev(Pw, E, r, cell=0.05, arrow_len_px=15, out_dir=None, step=None, ex
     plt.ylabel("z (forward)")
     plt.grid(False)
     plt.savefig(f"{out_dir}/obstacles_{str(step).zfill(3)}.png")
-    plt.savefig(f"../results/{exp_name}/step{step.zfill(2)}/bev.png")
+    plt.savefig(f"../results_diff/{exp_name}/step{step.zfill(2)}/bev.png")
 
 
 def load_intrinsics_and_pose(camera_file):
@@ -243,7 +243,7 @@ def visualize_pointcloud(depth_dir, color_dir, camera_dir, axis_size=0.1, dbscan
     # scannetpp_processing(pcd_combined, poses, target=None, only_bev=False, gif=False)
     for i in range(len(poses)):
         if i == len(poses) - 1:
-            print(f"{len(np.asarray(pcd_combined.points))}")
+            # print(f"{len(np.asarray(pcd_combined.points))}")
             render_bev(np.asarray(pcd_combined.points), poses[i], r=0.25, cell=0.04, out_dir=scene, step=str(i), exp_name=exp_name)
     # vis_geometries.insert(0, pcd_combined)
     # o3d.visualization.draw_geometries(vis_geometries, width=1280, height=720)
