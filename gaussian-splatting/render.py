@@ -34,6 +34,8 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     makedirs(render_path, exist_ok=True)
     makedirs(gts_path, exist_ok=True)
 
+    # print(f"{views = }")
+
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         rendering = render(view, gaussians, pipeline, background, use_trained_exp=train_test_exp, separate_sh=separate_sh)["render"]
         gt = view.original_image[0:3, :, :]
@@ -95,7 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_test", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument('--my_traj', action='store_true')
-    parser.add_argument('--trajectory_file', type=str, default=None)
+    parser.add_argument('--trajectory_file',  type=str, default='NULL')
     parser.add_argument("--exp_name", type=str, default='NULL', help="Name of the experiment")
 
 
@@ -105,4 +107,4 @@ if __name__ == "__main__":
     # Initialize system state (RNG)
     safe_state(args.quiet)
 
-    render_sets(model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test, SPARSE_ADAM_AVAILABLE, my_traj=args.my_traj, trajectory_file=args.trajectory_file, exp_name=args.exp_name) # Add args
+    render_sets(model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test, SPARSE_ADAM_AVAILABLE, my_traj=args.my_traj, trajectory_file=args.trajectory_file if args.trajectory_file != 'NULL' else None, exp_name=args.exp_name) # Add args

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='align_r2412_nc'
+EXP_NAME='align_r2412_nc000'
 IMAGE_NAME='room2412'
 IMAGE_EXT='jpg'
 # TRAJ_DESCRIPTION="Go to the black car visible on this scene, by first yawing right until aligned and then moving forward until you reach the car."

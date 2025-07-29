@@ -80,11 +80,11 @@ class Scene:
         for resolution_scale in resolution_scales:
             # print(f"{resolution_scale = }")
             print("Loading Training Cameras")
-            self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, False)
+            self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, False, True)
             print("Loading Test Cameras")
-            self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, True)
+            self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, True, True)
             print("Loading Trajectory Cameras")
-            self.traj_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.traj_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, True)
+            self.traj_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.traj_cameras, resolution_scale, args, scene_info.is_nerf_synthetic, False, False)
             
 
         if self.loaded_iter:

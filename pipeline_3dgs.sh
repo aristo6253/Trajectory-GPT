@@ -1,13 +1,15 @@
 #!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='garden_align_nc002'
+EXP_NAME='garden_align_nc012'
 # TRAJ_DESCRIPTION="Move towards the black door by avoiding the table in front of you, not going over it but sliding to the left and then moving towards our objective, the black door."
 # TRAJ_DESCRIPTION="Can you go around the table making walking in a square avoiding going over the table start by turning left and then start your path" 
-TRAJ_DESCRIPTION="Yaw and pitch so that the black door to the top-left is aligned perfectly with the camera."
+# TRAJ_DESCRIPTION="Yaw and pitch so that the black door to the top-left is aligned perfectly with the camera."
+# TRAJ_DESCRIPTION="Yaw and pitch so that the black vase to the top-right is aligned perfectly with the camera."
+TRAJ_DESCRIPTION="Yaw and pitch so that the yellow excavator to the bottom-left is aligned perfectly with the camera."
 # TRAJ_DESCRIPTION="Yaw to the left and have a rightwards motion to explore the scene by moving around the table."
-MODEL='output/garden_test'
-SOURCE_TRAJ="/n/holylfs05/LABS/pfister_lab/Lab/coxfs01/pfister_lab2/Lab/aristo/TrajectoryGPT/gaussian-splatting/output/garden_test/source_trajectory.json"
+MODEL='output/train'
+SOURCE_TRAJ="/n/holylfs05/LABS/pfister_lab/Lab/coxfs01/pfister_lab2/Lab/aristo/TrajectoryGPT/gaussian-splatting/${MODEL}/source_trajectory.json"
 
 echo "========== EXPERIMENT SETUP =========="
 echo "EXP_NAME: ${EXP_NAME}"

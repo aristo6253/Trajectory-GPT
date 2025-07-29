@@ -17,8 +17,11 @@ import cv2
 
 WARNED = False
 
-def loadCam(args, id, cam_info, resolution_scale, is_nerf_synthetic, is_test_dataset):
-    image = Image.new("RGB", (cam_info.width, cam_info.height), color=(0, 0, 0))
+def loadCam(args, id, cam_info, resolution_scale, is_nerf_synthetic, is_test_dataset, no_traj=True):
+    if no_traj:
+        image = Image.open(cam_info.image_path)
+    else:
+        image = Image.new("RGB", (cam_info.width, cam_info.height), color=(0, 0, 0))
 
     if cam_info.depth_path != "":
         try:
@@ -67,7 +70,7 @@ def loadCam(args, id, cam_info, resolution_scale, is_nerf_synthetic, is_test_dat
                   image_name=cam_info.image_name, uid=id, data_device=args.data_device,
                   train_test_exp=args.train_test_exp, is_test_dataset=is_test_dataset, is_test_view=cam_info.is_test)
 
-def cameraList_from_camInfos(cam_infos, resolution_scale, args, is_nerf_synthetic, is_test_dataset):
+def cameraList_from_camInfos(cam_infos, resolution_scale, args, is_nerf_synthetic, is_test_dataset, no_traj=True):
     camera_list = []
     # print(f"{len(cam_infos) = }")
 
@@ -76,7 +79,7 @@ def cameraList_from_camInfos(cam_infos, resolution_scale, args, is_nerf_syntheti
         # if id == 0:
         #     print(f"{c = }")
 
-        camera_list.append(loadCam(args, id, c, resolution_scale, is_nerf_synthetic, is_test_dataset))
+        camera_list.append(loadCam(args, id, c, resolution_scale, is_nerf_synthetic, is_test_dataset, no_traj))
 
     return camera_list
 

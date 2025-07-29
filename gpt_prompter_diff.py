@@ -49,6 +49,7 @@ def main():
     parser.add_argument("--logic_file", type=str, help="File where the trajectory logic will be saved")
     parser.add_argument("--overlay_cross", action="store_true", help="Overlay red cross on rgb.png")
     parser.add_argument('--preplanned_traj', type=str, default='NULL', help="Skip gpt for testing purposes")
+    parser.add_argument('--test', type=str, default='full', choices=['full', 'cot', 'dnb', 'basic'], help="")
     args = parser.parse_args()
 
     traj_desc = args.traj_desc
@@ -56,6 +57,19 @@ def main():
 
     if args.preplanned_traj == 'NULL':
 
+        if args.test == 'full':
+            print("FULL PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_FULL
+        elif args.test == 'cot':
+            print("COT PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_COT
+        elif args.test == 'dnb':
+            print("DNB PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_DNB
+        elif args.text == 'basic':
+            print("BASIC PROMPT")
+            SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_BASIC
+        
         client = OpenAI(api_key=api_key.OPENAI_API)
 
         base_dir = os.path.join("results_diff", exp_name)
@@ -63,8 +77,9 @@ def main():
 
         rgb0_path = os.path.join(base_dir, 'step00', "rgb.png")
         rgb_path = os.path.join(step_path, "rgb.png")
-        depth_path = os.path.join(step_path, "depth.png")
-        bev_path = os.path.join(step_path, "bev.png")
+        if args.test in ['full', 'dnb']:
+            depth_path = os.path.join(step_path, "depth.png")
+            bev_path = os.path.join(step_path, "bev.png")
         prompt_response_path = os.path.join(step_path, "prompt_and_response.txt")
         response_hist_path = os.path.join(base_dir, "response_history.txt")
 
@@ -84,7 +99,7 @@ def main():
                 recent = zip(incr_lines[start_idx:], logic_lines[start_idx:])
 
                 traj_hist = "\n".join(
-                    [f"Step{start_idx + i + 1}: {incr.strip()} ({logic.strip()})"
+                    [f"Step{start_idx + i + 1}: {incr.strip()} ({logic.strip() if args.test in ['full', 'cot'] else ''})"
                      for i, (incr, logic) in enumerate(recent)]
                 )
         else:
@@ -115,19 +130,22 @@ Follow camera-centric conventions exactly. No extra text.
 """
         print(f"{full_user_prompt = }")
 
+        user_content = [
+            {"type": "text", "text": full_user_prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb0_b64}"}},
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb_b64}"}},
+        ]
+
+        if args.test in ['full', 'dnb']:
+            user_content.extend([
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{depth_b64}"}},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{bev_b64}"}},
+            ])
+
         # Create the prompt and image inputs
         messages = [
-            {"role": "system", "content": gpt_params.SYSTEM_PROMPT.strip()},
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": full_user_prompt},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb0_b64}"}},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{rgb_b64}"}},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{depth_b64}"}},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{bev_b64}"}},
-                ]
-            }
+            {"role": "system", "content": SYSTEM_PROMPT.strip()},
+            {"role": "user", "content": user_content}
         ]
 
 
