@@ -1,5 +1,5 @@
 api_key.py
-visuals.ipynb
+*.ipynb
 __pycache__/
 results_diff/*
 results_3dgs/*

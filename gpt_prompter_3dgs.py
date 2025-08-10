@@ -70,7 +70,7 @@ def main():
         elif args.test == 'dnb':
             print("DNB PROMPT")
             SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_DNB
-        elif args.text == 'basic':
+        elif args.test == 'basic':
             print("BASIC PROMPT")
             SYSTEM_PROMPT = gpt_params.SYSTEM_PROMPT_BASIC
 
@@ -112,11 +112,13 @@ def main():
         # Encode images
         rgb0_b64 = encode_image(rgb0_path)
         rgb_b64 = encode_image(guided_rgb_path) if args.overlay_cross else encode_image(rgb_path)
-        depth_b64 = encode_image(depth_path)
-        bev_b64 = encode_image(bev_path)
+        if args.test in ['full', 'dnb']:
+            depth_b64 = encode_image(depth_path)
+            bev_b64 = encode_image(bev_path)
 
+        
 
-        full_user_prompt = f"""Trajectory Step {max_step} — Plan the next move.
+        cot = f"""Trajectory Step {max_step} — Plan the next move.
 
 Goal:
 {traj_desc}
@@ -128,10 +130,12 @@ Reminder: Respond with:
 1. Have some continuity reasoning
 2. Trajectory reasoning (max 4 lines)
 3. Checklist Verification
-4. Objective in format: ###\n(Objective)\n###
+4. Objective in format: ###\n(Objective)\n### (no indents)
 5. Motion command in format: `dx dy dz dyaw dpitch droll`
 Follow camera-centric conventions exactly. No extra text.
 """
+        
+        full_user_prompt = cot if args.test in ['full', 'cot'] else f"Trajectory Step {max_step} — Plan the next move.\nGoal:\n{traj_desc}"
         print(f"{full_user_prompt = }")
 
         user_content = [
@@ -153,7 +157,6 @@ Follow camera-centric conventions exactly. No extra text.
         ]
 
 
-
         # Send request
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -173,11 +176,12 @@ Follow camera-centric conventions exactly. No extra text.
         else:
             raise ValueError("No motion command found in GPT response.")
         
-        if logic and args.test in ['full', 'cot']:
-            with open(args.logic_file, "a") as f:
-                f.write(logic.group(1).strip() + "\n")
-        else:
-            raise ValueError("No logic command found in GPT response.")
+        if args.test in ['full', 'cot']:
+            if logic:
+                with open(args.logic_file, "a") as f:
+                    f.write(logic.group(1).strip() + "\n")
+            else:
+                raise ValueError("No logic command found in GPT response.")
 
 
         ### Here we have the next step

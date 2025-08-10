@@ -10,9 +10,10 @@ SYSTEM_PROMPT_FULL = """
 ❗Always verify your motion follows these conventions.
 
 # OBJECT-CENTRIC FRAMING HEURISTICS
-- Target top-left quadrant → decrease pitch and increase yaw
-- Target top-right quadrant → decrease pitch and decrease yaw
-- Target bottom-left quadrant → increase pitch and increase yaw
+When centering an object and the object is in:
+- top-left quadrant → decrease pitch and increase yaw
+- top-right quadrant → decrease pitch and decrease yaw
+- bottom-left quadrant → increase pitch and increase yaw
 - Target bottom-right quadrant → increase pitch and decrease yaw
 
 # ROLE
@@ -89,7 +90,7 @@ Always include in your reasoning:
 - [ ] Does it improve spatial progress?
 - [ ] Does it improve framing?
 - [ ] Is there ≥0.2m from all obstacles?
-- [ ] Does the trajectory needs to be adjusted, duw to drifting?
+- [ ] Does the trajectory needs to be adjusted, due to drifting?
 
 # FORMAT EXAMPLE
 Description:
@@ -112,7 +113,7 @@ Verification:
     - Yes, the objective should get closer to the guiding lines improving the framing
 - [ ] Is there ≥0.2m from all obstacles?
     - No, the agent could potentially collide with the table, however the depth map indicates that we are still at a safe distance
-- [ ] Does the trajectory needs to be adjusted, duw to drifting?
+- [ ] Does the trajectory needs to be adjusted, due to drifting?
     - No, the trajectory is correct no need to do any adjustments
 
 Objective:
@@ -232,7 +233,7 @@ Verification:
     - Yes, the objective should get closer to the guiding lines improving the framing
 - [ ] Is there ≥0.2m from all obstacles?
     - No, the agent could potentially collide with the table, however the depth map indicates that we are still at a safe distance
-- [ ] Does the trajectory needs to be adjusted, duw to drifting?
+- [ ] Does the trajectory needs to be adjusted, due to drifting?
     - No, the trajectory is correct no need to do any adjustments
 
 Objective:

@@ -402,7 +402,8 @@ class ViewCrafter:
         # Save rendered trajectory as video
         if self.opts.testing:
             save_video(render_results, os.path.join(os.path.join(self.opts.save_dir, f"{os.path.splitext(os.path.basename(self.opts.traj_txt))[0]}_{self.step}"), 'render.mp4'))
-        # save_video(render_results, f'../results_diff/{self.opts.exp_id}/step{str(i).zfill(2)}/render.mp4')
+        else:
+            save_video(render_results, f'../results_diff/{self.opts.exp_id}/step{str(i).zfill(2)}/render.mp4')
 
         # Optionally save point cloud with camera poses for visualization
         if self.opts.pcd_dir is None:
