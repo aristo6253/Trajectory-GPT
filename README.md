@@ -69,6 +69,8 @@ cd ../..
 
 ## Setup 3D GS Pipeline
 
+### 3D Gaussian Splatting
+
 ```bash
 cd gaussian-splatting
 # Create environment

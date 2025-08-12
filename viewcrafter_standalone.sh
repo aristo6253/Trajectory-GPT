@@ -1,18 +1,18 @@
 #!/bin/bash
 set -e  # exit on any error
 
-EXP_NAME='full_spin'
+EXP_NAME='base_vc_spin'
 IMAGE_NAME='truck'
 IMAGE_EXT='jpg'
 
 # TRAJ_DESCRIPTION="Move towards the black door by avoiding the table in front of you, not going over it but sliding to the left and then moving towards our objective, the black door."
-# TRAJ_DESCRIPTION="Move towards the yellow umbrella by avoiding the truck in front of you, sliding to the left and then moving towards our objective."
+TRAJ_DESCRIPTION="Move towards the yellow umbrella by avoiding the truck in front of you, sliding to the left and then moving towards our objective."
 # TRAJ_DESCRIPTION="Move towards the black vase by avoiding the table in front of you, not going over it but sliding to the right and then moving towards our objective, the black vase."
-TRAJ_DESCRIPTION="Move towards the yellow excavator by yawing until aligned with it and move forward."
+# TRAJ_DESCRIPTION="Move towards the yellow excavator by yawing until aligned with it and move forward."
 
 # --prompt "${TRAJ_DESCRIPTION}" \
 # --prompt "Navigation through an indoor scene" \
-DIFF_PROMPT="Smooth navigation through a scene"
+DIFF_PROMPT="Nonesense"
 
 
 echo "EXP_NAME: ${EXP_NAME}"
@@ -30,34 +30,11 @@ touch results_diff/${EXP_NAME}/logic.txt
 cp images/${IMAGE_NAME}.${IMAGE_EXT} CUT3R/my_examples/${EXP_NAME}/frame_000.jpg
 cp images/${IMAGE_NAME}.${IMAGE_EXT} results_diff/${EXP_NAME}/step00/rgb.png
 
+source activate /n/home08/adimitriou0/miniconda/envs/viewcrafter
+
 # Start loop
 for i in $(seq 1 20); do
     echo "========== ITERATION $i =========="
-
-    cd CUT3R
-
-    module load Anaconda2/2019.10-fasrc01 cuda/11.8
-    source activate /n/home08/adimitriou0/miniconda/envs/cut3r
-
-    echo RUNNING CUT3R
-
-    if [ "$i" -eq 1 ]; then
-        script="demo.py"
-    else
-        script="demo_ga.py"
-    fi
-
-    # Initial CUT3R inference
-    python "$script" \
-        --model_path src/cut3r_512_dpt_4_64.pth \
-        --seq_path my_examples/${EXP_NAME} \
-        --device cuda \
-        --size 512 \
-        --vis_threshold 1.5 \
-        --output_dir ./output/${EXP_NAME} \
-        --exp_name ${EXP_NAME}
-
-    cd ../
 
     # Initial GPT prompt
     python gpt_prompter_diff.py \
@@ -68,13 +45,9 @@ for i in $(seq 1 20); do
         --overlay_cross \
         --preplanned_traj results_diff/train.txt
 
-    conda deactivate
+    mkdir -p results_diff/${EXP_NAME}/step$(printf "%02d" $((i)))/
 
     cd ViewCrafter
-    echo "LOADING MODULES"
-
-    echo "ACTIVATING ENVIRONMENT"
-    source activate /n/home08/adimitriou0/miniconda/envs/viewcrafter
 
     echo "RUNNING VIEWCRAFTER"
     python inference.py \
@@ -92,11 +65,7 @@ for i in $(seq 1 20); do
         --width 1024 \
         --model_path ./checkpoints/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth \
         --prompt "${DIFF_PROMPT}" \
-        --traj_scale 0.5 \
-        --pcd_dir ../results_diff/${EXP_NAME}/step$(printf "%02d" $((i - 1)))/pcs_data.json \
-        --cam_info_dir ../results_diff/${EXP_NAME}/camera.npz
-
-    conda deactivate
+        --traj_scale 0.1 \
 
     cd ../
 

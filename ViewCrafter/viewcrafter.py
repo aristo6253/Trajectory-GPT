@@ -394,10 +394,10 @@ class ViewCrafter:
         # Set the first frame to be the original input image
         for i in range(len(frame_idx) - 1): # Skip the last one (we haven't calculated it yet) 
             # print(f"{frame_idx[i] = }")
+            if self.opts.pcd_dir is None:
+                continue
             frame_dir = f'../results_diff/{self.opts.exp_id}/step{str(i).zfill(2)}/rgb.png'
             render_results[frame_idx[i]] = torch.from_numpy(np.array(Image.open(frame_dir).convert("RGB").resize((1024, 576), Image.BILINEAR))).float() / 255.0
-        
-        # render_results[0] = self.img_ori if self.opts.testing
 
         # Save rendered trajectory as video
         if self.opts.testing:
@@ -407,7 +407,7 @@ class ViewCrafter:
 
         # Optionally save point cloud with camera poses for visualization
         if self.opts.pcd_dir is None:
-            save_pointcloud_with_normals([imgs[-1]], [self.pcd[-1]], msk=None, save_path=os.path.join(self.opts.save_dir,'pcd.ply') , mask_pc=False, reduce_pc=False)
+            save_pointcloud_with_normals([imgs[-1]], [self.pcd[-1]], msk=None, save_path=f'../results_diff/{self.opts.exp_id}/step{str(i).zfill(2)}/pcd.ply' , mask_pc=False, reduce_pc=False)
 
         # Refine coarse point cloud renderings using the diffusion model
         diffusion_results = self.run_diffusion(render_results)

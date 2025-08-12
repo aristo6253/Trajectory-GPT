@@ -190,10 +190,10 @@ Follow camera-centric conventions exactly. No extra text.
         max_step, _ = get_latest_step_folder(base_dir)
         step_idx = max_step# + 1
 
-        rgb_path = os.path.join(step_path, "rgb.png")
-        if args.overlay_cross:
-            guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
-            overlay_red_cross(rgb_path, guided_rgb_path)
+        # rgb_path = os.path.join(step_path, "rgb.png")
+        # if args.overlay_cross:
+        #     guided_rgb_path = os.path.join(step_path, "rgb_guided.png")
+        #     overlay_red_cross(rgb_path, guided_rgb_path)
 
         with open(args.preplanned_traj, "r") as f:
             lines = f.readlines()
